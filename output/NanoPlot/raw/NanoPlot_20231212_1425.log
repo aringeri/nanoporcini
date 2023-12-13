@@ -1,0 +1,45 @@
+2023-12-12 14:25:22,329 NanoPlot 1.24.0 started with arguments Namespace(N50=False, alength=False, bam=None, barcoded=False, color='#4CB391', colormap='Greens', cram=None, downsample=None, dpi=100, drop_outliers=False, fasta=None, fastq=None, fastq_minimal=None, fastq_rich=['data/fq/raw/20221214.CT.Sample1.BC89.fq.gz', 'data/fq/raw/20221214.CT.Sample2.BC90.fq.gz', 'data/fq/raw/20221214.CT.Sample3.BC91.fq.gz', 'data/fq/raw/20221214.CT.Sample4.BC92.fq.gz', 'data/fq/raw/20221214.CT.Sample5.BC93.fq.gz', 'data/fq/raw/20221214.CT.Sample6.BC94.fq.gz', 'data/fq/raw/20221214.CT.Sample7.BC95.fq.gz', 'data/fq/raw/20221214.CT.Sample8.BC96.fq.gz'], font_scale=1, format='png', listcolormaps=False, listcolors=False, loglength=False, maxlength=None, minlength=None, minqual=None, no_N50=False, outdir='output/NanoPlot/raw/', percentqual=False, pickle=None, plots=['kde', 'dot'], prefix='', raw=False, readtype='1D', runtime_until=None, store=False, summary=None, threads=4, title=None, ubam=None, verbose=True)
+2023-12-12 14:25:22,329 Python version is: 3.6.7 | packaged by conda-forge | (default, Jul  2 2019, 02:18:42)  [GCC 7.3.0]
+2023-12-12 14:25:22,330 Nanoplotter: valid output format png
+2023-12-12 14:25:22,348 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-12 14:25:22,348 Nanoget: Decompressing gzipped fastq data/fq/raw/20221214.CT.Sample1.BC89.fq.gz
+2023-12-12 14:25:22,348 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-12 14:25:22,348 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-12 14:25:22,348 Nanoget: Decompressing gzipped fastq data/fq/raw/20221214.CT.Sample2.BC90.fq.gz
+2023-12-12 14:25:22,348 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-12 14:25:22,348 Nanoget: Decompressing gzipped fastq data/fq/raw/20221214.CT.Sample3.BC91.fq.gz
+2023-12-12 14:25:22,349 Nanoget: Decompressing gzipped fastq data/fq/raw/20221214.CT.Sample4.BC92.fq.gz
+2023-12-12 14:25:38,768 Reduced DataFrame memory usage from 15.193584442138672Mb to 7.080766677856445Mb
+2023-12-12 14:25:38,790 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-12 14:25:38,791 Nanoget: Decompressing gzipped fastq data/fq/raw/20221214.CT.Sample5.BC93.fq.gz
+2023-12-12 14:25:45,057 Reduced DataFrame memory usage from 19.380081176757812Mb to 8.843599319458008Mb
+2023-12-12 14:25:45,088 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-12 14:25:45,088 Nanoget: Decompressing gzipped fastq data/fq/raw/20221214.CT.Sample6.BC94.fq.gz
+2023-12-12 14:25:45,990 Reduced DataFrame memory usage from 21.044857025146484Mb to 9.807573318481445Mb
+2023-12-12 14:25:46,022 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-12 14:25:46,022 Nanoget: Decompressing gzipped fastq data/fq/raw/20221214.CT.Sample7.BC95.fq.gz
+2023-12-12 14:25:51,183 Reduced DataFrame memory usage from 25.50580406188965Mb to 11.88646125793457Mb
+2023-12-12 14:25:51,222 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-12 14:25:51,223 Nanoget: Decompressing gzipped fastq data/fq/raw/20221214.CT.Sample8.BC96.fq.gz
+2023-12-12 14:26:02,092 Reduced DataFrame memory usage from 20.146066665649414Mb to 9.38871955871582Mb
+2023-12-12 14:26:04,332 Reduced DataFrame memory usage from 16.934782028198242Mb to 7.727783203125Mb
+2023-12-12 14:26:10,294 Reduced DataFrame memory usage from 20.388887405395508Mb to 9.30392837524414Mb
+2023-12-12 14:26:17,959 Reduced DataFrame memory usage from 22.85756492614746Mb to 10.430412292480469Mb
+2023-12-12 14:26:18,780 Nanoget: Gathered all metrics of 821817 reads
+2023-12-12 14:26:19,287 Calculated statistics
+2023-12-12 14:26:19,288 Using sequenced read lengths for plotting.
+2023-12-12 14:26:19,321 Removed 3 artefactual reads with very short length and very high quality.
+2023-12-12 14:26:19,825 Calculated statistics
+2023-12-12 14:26:19,826 Nanoplotter: Valid color #4CB391.
+2023-12-12 14:26:19,827 Nanoplotter: Valid colormap Greens.
+2023-12-12 14:26:19,853 Nanoplotter: Creating length plots for Read length.
+2023-12-12 14:26:19,856 Nanoplotter: Using 821814 reads maximum of 115155bp.
+2023-12-12 14:26:31,640 Created length plots
+2023-12-12 14:26:31,721 Nanoplotter: Creating Read lengths vs Average read quality plots using statistics from 821814 reads.
+2023-12-12 14:26:43,634 Created LengthvsQual plot
+2023-12-12 14:26:43,634 Nanoplotter: Creating heatmap of reads per channel using 821814 reads.
+2023-12-12 14:26:44,098 Created spatialheatmap for succesfull basecalls.
+2023-12-12 14:26:44,211 Nanoplotter: Creating timeplots using 821814 reads.
+2023-12-12 14:26:50,434 Created timeplots.
+2023-12-12 14:26:50,435 Writing html report.
+2023-12-12 14:27:07,910 Finished!
