@@ -4,35 +4,39 @@ nextflow.enable.dsl=2
 params.input = "$baseDir/../data/fq/raw/*.fq.gz"
 params.outdir = 'output'
 
-process quality {
-    publishDir "$params.outdir/NanoPlot/$outdir", mode: 'copy', overwrite: false
-    
-    input:
-    val seqs
-    val outdir
-    
-    output:
-    path "*"
+include { qualitySingle } from './quality' addParams(outdir: params.outdir)
+include { qualitySingle as qualitySingle2 } from './quality' addParams(outdir: params.outdir)
 
-    """
-    NanoPlot --fastq_rich $seqs -o . --verbose
-    """
-}
 
-process qualitySingle {
-    publishDir "$params.outdir/NanoPlot/$outdir/$sampleId", mode: 'copy', overwrite: false
+// process quality {
+//     publishDir "$params.outdir/NanoPlot/$outdir", mode: 'copy', overwrite: false
     
-    input:
-    tuple val(sampleId), path(reads, name: 'reads.fq.gz')
-    val outdir
+//     input:
+//     val seqs
+//     val outdir
     
-    output:
-    path "*"
+//     output:
+//     path "*"
 
-    """
-    NanoPlot --fastq_rich reads.fq.gz -o . --verbose
-    """
-}
+//     """
+//     NanoPlot --fastq_rich $seqs -o . --verbose
+//     """
+// }
+
+// process qualitySingle {
+//     publishDir "$params.outdir/NanoPlot/$outdir/$sampleId", mode: 'copy', overwrite: false
+    
+//     input:
+//     tuple val(sampleId), path(reads, name: 'reads.fq.gz')
+//     val outdir
+    
+//     output:
+//     path "*"
+
+//     """
+//     NanoPlot --fastq_rich reads.fq.gz -o . --verbose
+//     """
+// }
 
 process filtering {
     publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
@@ -43,7 +47,7 @@ process filtering {
 
     output:
     // path "*.log" -- ignore log files for now (can be access in the work directory)
-    path "*.fq.gz"
+    tuple val(sampleId), path("*.fq.gz")
 
     """
     gunzip -c reads.fq.gz \
@@ -82,10 +86,9 @@ workflow {
 
   filteredQ12 = filtering(ch_input, Channel.value(12))
 
-  qualitySingle(filteredQ12, Channel.value('q12'))
+  qualitySingle2(filteredQ12, Channel.value('q12'))
 
   //quality(params.input, 'raw')
   //test()
 
-  
 }
