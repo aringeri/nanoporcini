@@ -42,13 +42,27 @@ process filtering {
     val qThresh
 
     output:
-    path "*"
+    // path "*.log" -- ignore log files for now (can be access in the work directory)
+    path "*.fq.gz"
 
     """
-    touch trimmed-"$sampleId".fq.qz
-    #gunzip -c reads.fq.gz \
-    #    | NanoFilt -q $qThresh \
-    #    | gzip > trimmed-$sampleId
+    gunzip -c reads.fq.gz \
+        | NanoFilt -q $qThresh \
+        | gzip > trimmed-"$sampleId".fq.gz
+    """
+}
+
+process test {
+
+    input:
+    // path(l, name:'trim.log')
+    path(trimmed, name:'trimmed.fq.gz')
+
+    output:
+    stdout
+
+    """
+    echo $trimmed
     """
 }
 
@@ -66,7 +80,9 @@ workflow {
 
   qualitySingle(ch_input, Channel.value('raw'))
 
-  filtering(ch_input, Channel.value(12))
+  filteredQ12 = filtering(ch_input, Channel.value(12))
+
+  qualitySingle(filteredQ12, Channel.value('q12'))
 
   //quality(params.input, 'raw')
   //test()
