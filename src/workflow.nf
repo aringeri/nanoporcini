@@ -7,37 +7,6 @@ params.outdir = 'output'
 include { qualitySingle } from './quality' addParams(outdir: params.outdir)
 include { qualitySingle as qualitySingle2 } from './quality' addParams(outdir: params.outdir)
 
-
-// process quality {
-//     publishDir "$params.outdir/NanoPlot/$outdir", mode: 'copy', overwrite: false
-    
-//     input:
-//     val seqs
-//     val outdir
-    
-//     output:
-//     path "*"
-
-//     """
-//     NanoPlot --fastq_rich $seqs -o . --verbose
-//     """
-// }
-
-// process qualitySingle {
-//     publishDir "$params.outdir/NanoPlot/$outdir/$sampleId", mode: 'copy', overwrite: false
-    
-//     input:
-//     tuple val(sampleId), path(reads, name: 'reads.fq.gz')
-//     val outdir
-    
-//     output:
-//     path "*"
-
-//     """
-//     NanoPlot --fastq_rich reads.fq.gz -o . --verbose
-//     """
-// }
-
 process filtering {
     publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
 
@@ -72,9 +41,9 @@ process test {
 
 workflow {
   ch_input = Channel.fromPath( params.input )
-	.map{ it -> 
-        sampleId = it.name.replaceAll(".fq.gz\$", "")
-        tuple(sampleId, it) 
+	.map{ rawReadPath -> 
+        sampleId = rawReadPath.name.replaceAll(".fq.gz\$", "")
+        tuple(sampleId, rawReadPath) 
     }
 	.view()
 

@@ -1,8 +1,6 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// params.outdir = 'output'
-
 process qualitySingle {
     publishDir "$params.outdir/NanoPlot/$outdir/$sampleId", mode: 'copy', overwrite: false
     
@@ -17,3 +15,18 @@ process qualitySingle {
     NanoPlot --fastq_rich reads.fq.gz -o . --verbose
     """
 }
+
+// process qualityMulti {
+//     publishDir "$params.outdir/NanoPlot/$outdir", mode: 'copy', overwrite: false
+    
+//     input:
+//     val seqs
+//     val outdir
+    
+//     output:
+//     path "*"
+
+//     """
+//     NanoPlot --fastq_rich $seqs -o . --verbose
+//     """
+// }
