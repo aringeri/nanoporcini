@@ -1,13 +1,14 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+
 params.input = "$baseDir/../data/fq/raw/*.fq.gz"
 params.outdir = 'output'
 
-include { qualitySingle } from './quality' addParams(outdir: params.outdir)
-include { qualitySingle as qualitySingle2 } from './quality' addParams(outdir: params.outdir)
+include { nanoplot } from './quality' addParams(outdir: params.outdir)
+include { nanoplot as nanoplot2 } from './quality' addParams(outdir: params.outdir)
 
-process filtering {
+process nanofilt {
     publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
 
     input:
@@ -25,17 +26,17 @@ process filtering {
     """
 }
 
-process test {
+process porechop {
+    // publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
 
     input:
-    // path(l, name:'trim.log')
-    path(trimmed, name:'trimmed.fq.gz')
+    tuple val(sampleId), path('reads.fq.gz')
 
     output:
-    stdout
+    tuple val(sampleId), path("*.fq.gz")
 
     """
-    echo $trimmed
+    porechop-runner.py --threads 16 -i reads.fq.gz -o trimmed-reads.fq.gz
     """
 }
 
@@ -47,13 +48,10 @@ workflow {
     }
 	.view()
 
-  qualitySingle(ch_input, Channel.value('raw'))
+  nanoplot(ch_input, Channel.value('raw'))
 
-  filteredQ12 = filtering(ch_input, Channel.value(12))
+  without_adapters = porechop(ch_input)
 
-  qualitySingle2(filteredQ12, Channel.value('q12'))
-
-  //quality(params.input, 'raw')
-  //test()
-
+//   filteredQ12 = nanofilt(without_adapters, Channel.value(12))
+//   nanoplot2(filteredQ12, Channel.value('q12'))
 }
