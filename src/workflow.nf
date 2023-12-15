@@ -76,10 +76,6 @@ workflow {
         sampleId = it.name.replaceAll(".fq.gz\$", "")
         tuple(sampleId, it) 
     }
-    .filter { sampleId, p ->
-        // TODO - fix corrupted sample
-        sampleId != '20221214.CT.Sample7.BC95'
-    }
 	.view()
 
   qualitySingle(ch_input, Channel.value('raw'))
