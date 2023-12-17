@@ -12,7 +12,7 @@ process nanofilt {
     publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
 
     input:
-    tuple val(sampleId), path('reads.fq.gz')
+    tuple val(sampleId), path(reads, name: '*.fq.gz')
     val qThresh
 
     output:
@@ -20,15 +20,13 @@ process nanofilt {
     tuple val(sampleId), path("*.fq.gz")
 
     """
-    gunzip -c reads.fq.gz \
+    gunzip -c $reads \
         | NanoFilt -q $qThresh \
         | gzip > trimmed-"$sampleId".fq.gz
     """
 }
 
 process porechop {
-    // publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
-
     input:
     tuple val(sampleId), path('reads.fq.gz')
 
@@ -52,6 +50,6 @@ workflow {
 
   without_adapters = porechop(ch_input)
 
-//   filteredQ12 = nanofilt(without_adapters, Channel.value(12))
-//   nanoplot2(filteredQ12, Channel.value('q12'))
+  filteredQ12 = nanofilt(without_adapters, Channel.value(12))
+  nanoplot2(filteredQ12, Channel.value('q12'))
 }
