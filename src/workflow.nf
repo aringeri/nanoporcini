@@ -12,7 +12,7 @@ process nanofilt {
     publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
 
     input:
-    tuple val(sampleId), path(reads, name: '*.fq.gz')
+    tuple val(sampleId), path('reads.fq.gz')
     val qThresh
 
     output:
@@ -20,7 +20,7 @@ process nanofilt {
     tuple val(sampleId), path("*.fq.gz")
 
     """
-    gunzip -c $reads \
+    gunzip -c reads.fq.gz \
         | NanoFilt -q $qThresh \
         | gzip > trimmed-"$sampleId".fq.gz
     """
