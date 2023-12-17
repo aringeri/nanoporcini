@@ -20,7 +20,7 @@ process nanofilt {
     tuple val(sampleId), path("*.fq.gz")
 
     """
-    gunzip -c reads.fq.gz \
+    cat reads.fq.gz \
         | NanoFilt -q $qThresh \
         | gzip > trimmed-"$sampleId".fq.gz
     """
