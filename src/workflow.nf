@@ -20,7 +20,7 @@ process nanofilt {
     tuple val(sampleId), path("*.fq.gz")
 
     """
-    cat reads.fq.gz \
+    gunzip -c reads.fq.gz \
         | NanoFilt -q $qThresh \
         | gzip > trimmed-"$sampleId".fq.gz
     """
@@ -34,17 +34,33 @@ process porechop {
     tuple val(sampleId), path("*.fq.gz")
 
     """
-    porechop-runner.py --threads 16 -i reads.fq.gz -o trimmed-reads.fq.gz
+    porechop-runner.py --threads 16 -i reads.fq.gz | gzip > trimmed-reads.fq.gz
     """
+}
+
+process itsx {
+  input:
+    tuple val(sampleId), path('reads.fq.gz')
+
+  output:
+    tuple val(sampleId), path('ITSx_out.*.fasta')
+  
+  """
+  gunzip -c reads.fq.gz > reads.fq
+  seqtk seq -A reads.fq > reads.fa
+  ITSx -i reads.fa --cpu 8 --save_regions all -t Fungi
+  # TODO salvage quality scores
+  """
 }
 
 workflow {
   ch_input = Channel.fromPath( params.input )
-	.map{ rawReadPath -> 
-        sampleId = rawReadPath.name.replaceAll(".fq.gz\$", "")
-        tuple(sampleId, rawReadPath) 
+    .map{ rawReadPath -> 
+          sampleId = rawReadPath.name.replaceAll(".fq.gz\$", "")
+          tuple(sampleId, rawReadPath) 
     }
-	.view()
+    .first()
+    .view()
 
   nanoplot(ch_input, Channel.value('raw'))
 
