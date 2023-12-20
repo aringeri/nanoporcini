@@ -97,4 +97,6 @@ workflow subsample {
       println "writing to data/sub100/"
       item[1].copyTo('data/sub100/')
     }
+  
+  nanoplot(ch_input, Channel.value('sub100'))
 }
