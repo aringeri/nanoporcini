@@ -1,0 +1,24 @@
+2023-12-14 15:53:11,349 NanoPlot 1.24.0 started with arguments Namespace(N50=False, alength=False, bam=None, barcoded=False, color='#4CB391', colormap='Greens', cram=None, downsample=None, dpi=100, drop_outliers=False, fasta=None, fastq=None, fastq_minimal=None, fastq_rich=['reads.fq.gz'], font_scale=1, format='png', listcolormaps=False, listcolors=False, loglength=False, maxlength=None, minlength=None, minqual=None, no_N50=False, outdir='.', percentqual=False, pickle=None, plots=['kde', 'dot'], prefix='', raw=False, readtype='1D', runtime_until=None, store=False, summary=None, threads=4, title=None, ubam=None, verbose=True)
+2023-12-14 15:53:11,349 Python version is: 3.6.7 | packaged by conda-forge | (default, Jul  2 2019, 02:18:42)  [GCC 7.3.0]
+2023-12-14 15:53:11,350 Nanoplotter: valid output format png
+2023-12-14 15:53:11,357 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-14 15:53:11,357 Nanoget: Decompressing gzipped fastq reads.fq.gz
+2023-12-14 15:53:30,114 Reduced DataFrame memory usage from 16.197675704956055Mb to 7.3914337158203125Mb
+2023-12-14 15:53:30,265 Nanoget: Gathered all metrics of 82449 reads
+2023-12-14 15:53:30,322 Calculated statistics
+2023-12-14 15:53:30,323 Using sequenced read lengths for plotting.
+2023-12-14 15:53:30,329 Removed 1 artefactual reads with very short length and very high quality.
+2023-12-14 15:53:30,382 Calculated statistics
+2023-12-14 15:53:30,383 Nanoplotter: Valid color #4CB391.
+2023-12-14 15:53:30,383 Nanoplotter: Valid colormap Greens.
+2023-12-14 15:53:30,387 Nanoplotter: Creating length plots for Read length.
+2023-12-14 15:53:30,388 Nanoplotter: Using 82448 reads maximum of 17028bp.
+2023-12-14 15:53:32,529 Created length plots
+2023-12-14 15:53:32,537 Nanoplotter: Creating Read lengths vs Average read quality plots using statistics from 82448 reads.
+2023-12-14 15:53:36,578 Created LengthvsQual plot
+2023-12-14 15:53:36,578 Nanoplotter: Creating heatmap of reads per channel using 82448 reads.
+2023-12-14 15:53:37,021 Created spatialheatmap for succesfull basecalls.
+2023-12-14 15:53:37,033 Nanoplotter: Creating timeplots using 82448 reads.
+2023-12-14 15:53:38,850 Created timeplots.
+2023-12-14 15:53:38,851 Writing html report.
+2023-12-14 15:53:43,099 Finished!

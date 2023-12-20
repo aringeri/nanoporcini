@@ -1,0 +1,22 @@
+2023-12-18 10:50:35,111 NanoPlot 1.24.0 started with arguments Namespace(N50=False, alength=False, bam=None, barcoded=False, color='#4CB391', colormap='Greens', cram=None, downsample=None, dpi=100, drop_outliers=False, fasta=None, fastq=None, fastq_minimal=None, fastq_rich=['reads.fq.gz'], font_scale=1, format='png', listcolormaps=False, listcolors=False, loglength=False, maxlength=None, minlength=None, minqual=None, no_N50=False, outdir='.', percentqual=False, pickle=None, plots=['kde', 'dot'], prefix='', raw=False, readtype='1D', runtime_until=None, store=False, summary=None, threads=4, title=None, ubam=None, verbose=True)
+2023-12-18 10:50:35,111 Python version is: 3.6.7 | packaged by conda-forge | (default, Jul  2 2019, 02:18:42)  [GCC 7.3.0]
+2023-12-18 10:50:35,112 Nanoplotter: valid output format png
+2023-12-18 10:50:35,118 Nanoget: Starting to collect statistics from rich fastq file.
+2023-12-18 10:50:35,118 Nanoget: Decompressing gzipped fastq reads.fq.gz
+2023-12-18 10:50:57,879 Reduced DataFrame memory usage from 19.84116554260254Mb to 9.053997039794922Mb
+2023-12-18 10:50:58,108 Nanoget: Gathered all metrics of 100995 reads
+2023-12-18 10:50:58,174 Calculated statistics
+2023-12-18 10:50:58,175 Using sequenced read lengths for plotting.
+2023-12-18 10:50:58,183 Nanoplotter: Valid color #4CB391.
+2023-12-18 10:50:58,183 Nanoplotter: Valid colormap Greens.
+2023-12-18 10:50:58,188 Nanoplotter: Creating length plots for Read length.
+2023-12-18 10:50:58,188 Nanoplotter: Using 100995 reads maximum of 9344bp.
+2023-12-18 10:51:00,469 Created length plots
+2023-12-18 10:51:00,478 Nanoplotter: Creating Read lengths vs Average read quality plots using statistics from 100995 reads.
+2023-12-18 10:51:04,844 Created LengthvsQual plot
+2023-12-18 10:51:04,845 Nanoplotter: Creating heatmap of reads per channel using 100995 reads.
+2023-12-18 10:51:05,297 Created spatialheatmap for succesfull basecalls.
+2023-12-18 10:51:05,311 Nanoplotter: Creating timeplots using 100995 reads.
+2023-12-18 10:51:06,954 Created timeplots.
+2023-12-18 10:51:06,954 Writing html report.
+2023-12-18 10:51:11,366 Finished!
