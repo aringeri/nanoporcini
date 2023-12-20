@@ -84,6 +84,24 @@ process mk_subsample {
     """
 }
 
+process nanoplot_conda {
+  // conda 'bioconda::nanoplot=1.42.0'
+  conda '/opt/miniconda3/miniconda3'
+
+  publishDir "$params.outdir/NanoPlot/$outdir/$sampleId", mode: 'copy', overwrite: false
+  
+  input:
+  tuple val(sampleId), path(reads, name: 'reads.fq.gz')
+  val outdir
+  
+  output:
+  path "*"
+
+  """
+  NanoPlot --fastq_rich reads.fq.gz -o . --verbose
+  """
+}
+
 workflow subsample {
   ch_input = Channel.fromPath(params.input)
     .map{ rawReadPath -> 
@@ -92,11 +110,12 @@ workflow subsample {
     }
     .view()
   
-  mk_subsample(ch_input)
-    .subscribe { item ->
-      println "writing to data/sub100/"
-      item[1].copyTo('data/sub100/')
-    }
+  subs = mk_subsample(ch_input)
+    // .subscribe { item ->
+    //   println "writing to data/sub100/"
+    //   item[1].copyTo('data/sub100/')
+    // }
+  nanoplot_conda(subs, Channel.value('sub100'))
   
-  nanoplot(ch_input, Channel.value('sub100'))
+  // nanoplot_conda(ch_input, Channel.value('sub100'))
 }
