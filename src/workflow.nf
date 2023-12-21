@@ -104,13 +104,17 @@ process nanoplot_conda {
 
 process nanoplot_list {
   conda '/opt/miniconda3/miniconda3'
+  publishDir "$params.outdir/NanoPlot/$outdir/", mode: 'copy', overwrite: false
 
   input:
-  path('reads')
-  val outdir
+    path('reads*.fq.gz')
+    val outdir
+
+  output:
+    path "*"
 
   """
-  echo reads*
+  NanoPlot --fastq_rich reads*.fq.gz -o . --verbose
   """
 }
 
