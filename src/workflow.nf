@@ -72,15 +72,15 @@ workflow {
 
 process mk_subsample {
   input:
-    tuple val(sampleId), path('in.fq.gz')
+    path('in.fq.gz')
 
     output:
-    tuple val(sampleId), path("*.fq.gz")
+    path("*.fq.gz")
 
     """
     gunzip -c in.fq.gz > in.fq
     seqtk sample -s11 in.fq 100 \
-      | gzip > $sampleId".fq.gz"
+      | gzip > out.fq.gz
     """
 }
 
@@ -102,20 +102,34 @@ process nanoplot_conda {
   """
 }
 
+process nanoplot_list {
+  conda '/opt/miniconda3/miniconda3'
+
+  input:
+  path('reads')
+  val outdir
+
+  """
+  echo reads*
+  """
+}
+
 workflow subsample {
   ch_input = Channel.fromPath(params.input)
-    .map{ rawReadPath -> 
-          sampleId = rawReadPath.name.replaceAll(".fq.gz\$", "")
-          tuple(sampleId, rawReadPath) 
-    }
+    // .map{ rawReadPath -> 
+    //       sampleId = rawReadPath.name.replaceAll(".fq.gz\$", "")
+    //       tuple(sampleId, rawReadPath) 
+    // }
     .view()
   
   subs = mk_subsample(ch_input)
+    .collect()
     // .subscribe { item ->
     //   println "writing to data/sub100/"
     //   item[1].copyTo('data/sub100/')
     // }
-  nanoplot_conda(subs, Channel.value('sub100'))
+  // nanoplot_conda(subs, Channel.value('sub100'))
+  nanoplot_list(subs, Channel.value('sub100'))
   
   // nanoplot_conda(ch_input, Channel.value('sub100'))
 }
