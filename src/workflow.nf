@@ -7,6 +7,9 @@ params.outdir = 'output'
 
 include { nanoplot } from './quality' addParams(outdir: params.outdir)
 include { nanoplot as nanoplot2 } from './quality' addParams(outdir: params.outdir)
+include { nanoplot_summary } from './quality' addParams(outdir: params.outdir)
+
+
 
 process nanofilt {
     publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
@@ -72,16 +75,16 @@ workflow {
 
 process mk_subsample {
   input:
-    path('in.fq.gz')
+    tuple val(sampleId), path('in.fq.gz')
 
-    output:
-    path("*.fq.gz")
+  output:
+    tuple val(sampleId), path("*.fq.gz")
 
-    """
-    gunzip -c in.fq.gz > in.fq
-    seqtk sample -s11 in.fq 100 \
-      | gzip > out.fq.gz
-    """
+  """
+  gunzip -c in.fq.gz > in.fq
+  seqtk sample -s11 in.fq 100 \
+    | gzip > out.fq.gz
+  """
 }
 
 process nanoplot_conda {
@@ -120,20 +123,28 @@ process nanoplot_list {
 
 workflow subsample {
   ch_input = Channel.fromPath(params.input)
-    // .map{ rawReadPath -> 
-    //       sampleId = rawReadPath.name.replaceAll(".fq.gz\$", "")
-    //       tuple(sampleId, rawReadPath) 
-    // }
+    .map{ rawReadPath -> 
+          sampleId = rawReadPath.name.replaceAll(".fq.gz\$", "")
+          tuple(sampleId, rawReadPath) 
+    }
     .view()
   
   subs = mk_subsample(ch_input)
+
+  onlyFiles = subs
+    .map { tuple -> tuple[1] }
     .collect()
-    // .subscribe { item ->
-    //   println "writing to data/sub100/"
-    //   item[1].copyTo('data/sub100/')
-    // }
-  // nanoplot_conda(subs, Channel.value('sub100'))
-  nanoplot_list(subs, Channel.value('sub100'))
   
-  // nanoplot_conda(ch_input, Channel.value('sub100'))
+  nanoplot_list(onlyFiles, Channel.value('sub100'))
+  
+  without_adapters = porechop(subs)
+  filteredQ15 = nanofilt(without_adapters, Channel.value(15))
+
+  q15Files = filteredQ15
+    .map{ tuple -> tuple[1] }
+    .collect()
+
+    nanoplot_summary(q15Files, Channel.value('sub100-Q15'))
+
+  
 }

@@ -16,6 +16,23 @@ process nanoplot {
     """
 }
 
+process nanoplot_summary {
+  conda '/opt/miniconda3/miniconda3'
+  publishDir "$params.outdir/NanoPlot/$outdir/", mode: 'copy', overwrite: false
+
+  input:
+    path('reads*.fq.gz')
+    val outdir
+
+  output:
+    path "*"
+
+  """
+  NanoPlot --fastq_rich reads*.fq.gz -o . --verbose
+  """
+}
+
+
 // process qualityMulti {
 //     publishDir "$params.outdir/NanoPlot/$outdir", mode: 'copy', overwrite: false
     
