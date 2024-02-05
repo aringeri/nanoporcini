@@ -1,3 +1,4 @@
 .nextflow*
 **.swp
 work/*
+**.DS_Store

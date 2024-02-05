@@ -9,8 +9,6 @@ include { nanoplot } from './quality' addParams(outdir: params.outdir)
 include { nanoplot as nanoplot2 } from './quality' addParams(outdir: params.outdir)
 include { nanoplot_summary } from './quality' addParams(outdir: params.outdir)
 
-
-
 process nanofilt {
     publishDir "$params.outdir/NanoFilt/q$qThresh/$sampleId", mode: 'copy', overwrite: false
 
@@ -144,7 +142,6 @@ workflow subsample {
     .map{ tuple -> tuple[1] }
     .collect()
 
-    nanoplot_summary(q15Files, Channel.value('sub100-Q15'))
-
-  
+  // Not working -- nanofilt not found - conda?
+  nanoplot_summary(q15Files, Channel.value('sub100-Q15'))
 }
