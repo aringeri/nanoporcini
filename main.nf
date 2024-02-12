@@ -1,31 +1,31 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
-params.input = "$baseDir/../data/sub100/*.fastq.gz"
-params.unite_db = "$baseDir/../data/db/utax_reference_dataset_all_25.07.2023.fasta.gz"
+params.input = "$baseDir/data/sub100/*.fastq.gz"
+params.unite_db = "$baseDir/data/db/utax_reference_dataset_all_25.07.2023.fasta.gz"
 params.outdir = 'output'
 
-include { NANOPLOT } from '../modules/nf-core/nanoplot'
-include { NANOPLOT as NANOPLOT_2 } from '../modules/nf-core/nanoplot'
-include { NANOPLOT_BULK } from '../modules/local/nanoplot_bulk'
-include { NANOPLOT_BULK as NANOPLOT_BULK_2 } from '../modules/local/nanoplot_bulk'
-include { PORECHOP_PORECHOP } from '../modules/nf-core/porechop/porechop'
-include { FILTLONG } from '../modules/nf-core/filtlong'
+include { NANOPLOT } from './modules/nf-core/nanoplot'
+include { NANOPLOT as NANOPLOT_2 } from './modules/nf-core/nanoplot'
+include { NANOPLOT_BULK } from './modules/local/nanoplot_bulk'
+include { NANOPLOT_BULK as NANOPLOT_BULK_2 } from './modules/local/nanoplot_bulk'
+include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
+include { FILTLONG } from './modules/nf-core/filtlong'
 
-include { ITSXPRESS } from '../modules/local/itsxpress'
-include { VSEARCH_RELABEL } from '../modules/local/vsearch/relabel'
-include { RENAME_BARCODE_LABEL } from '../modules/local/rename_barcode_label'
-include { FASTQ_CONCAT } from '../modules/local/fastq_concat'
+include { ITSXPRESS } from './modules/local/itsxpress'
+include { VSEARCH_RELABEL } from './modules/local/vsearch/relabel'
+include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
+include { FASTQ_CONCAT } from './modules/local/fastq_concat'
 
-include { VSEARCH_CLUSTER_A } from '../modules/local/vsearch/cluster'
-include { VSEARCH_UCHIME_DENOVO } from '../modules/local/vsearch/uchime_denovo'
-include { VSEARCH_UCHIME_REF } from '../modules/local/vsearch/uchime_ref'
+include { VSEARCH_CLUSTER_A } from './modules/local/vsearch/cluster'
+include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
+include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
 
-include { FORMAT_CONSENSUS_LABELS } from '../modules/local/format_consensus_labels'
-include { VSEARCH_CLUSTER } from '../modules/nf-core/vsearch/cluster'
-include { VSEARCH_SINTAX } from '../modules/nf-core/vsearch/sintax'
+include { FORMAT_CONSENSUS_LABELS } from './modules/local/format_consensus_labels'
+// include { VSEARCH_CLUSTER } from './modules/nf-core/vsearch/cluster'
+include { VSEARCH_SINTAX } from './modules/nf-core/vsearch/sintax'
 
-include { PHYLOSEQ } from '../modules/local/phyloseq'
+include { PHYLOSEQ } from './modules/local/phyloseq'
 
 workflow {
     ch_raw_reads = Channel.fromPath(params.input, checkIfExists: true)
