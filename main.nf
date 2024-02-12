@@ -13,9 +13,11 @@ include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
 include { FILTLONG } from './modules/nf-core/filtlong'
 
 include { ITSXPRESS } from './modules/local/itsxpress'
-include { VSEARCH_RELABEL } from './modules/local/vsearch/relabel'
+// include { VSEARCH_RELABEL } from './modules/local/vsearch/relabel'
 include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
 include { FASTQ_CONCAT } from './modules/local/fastq_concat'
+
+include { VSEARCH_DEREPLICATE } from './modules/local/vsearch/dereplicate'
 
 include { VSEARCH_CLUSTER_A } from './modules/local/vsearch/cluster'
 include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
@@ -39,7 +41,7 @@ workflow {
         [ [id: fastq.name.replaceAll(".fastq.gz\$", "")], fastq]
       }
     // must have ending '.fastq.gz'
-    NANOPLOT(ch_reads)
+    // NANOPLOT(ch_reads)
 
     chopped = PORECHOP_PORECHOP(ch_reads)
 
@@ -51,7 +53,7 @@ workflow {
       }
     )
 
-    NANOPLOT_2(filtered.reads)
+    // NANOPLOT_2(filtered.reads)
     NANOPLOT_BULK_2(
       filtered.reads.collect{ tuple -> 
           (meta, reads) = tuple
@@ -67,12 +69,14 @@ workflow {
       (meta, read) = it
       read
     }.map {
-      [ [id: "all-reads"], it]
+      [ [id: "all-reads", foo:"bar"], it]
     }
-    merged_reads = FASTQ_CONCAT(all_reads).merged_reads
     
-    prepped_for_vsearch = RENAME_BARCODE_LABEL(merged_reads).reads
-    cluster_out = VSEARCH_CLUSTER_A(prepped_for_vsearch)
+    prepped_for_vsearch = FASTQ_CONCAT(all_reads).merged_reads 
+      | RENAME_BARCODE_LABEL
+
+    cluster_out = VSEARCH_DEREPLICATE(prepped_for_vsearch.reads).reads
+      | VSEARCH_CLUSTER_A
     
     VSEARCH_UCHIME_REF(
       VSEARCH_UCHIME_DENOVO(cluster_out.centroids).nonchimeras, 

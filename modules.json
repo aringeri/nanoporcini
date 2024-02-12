@@ -1,37 +1,47 @@
 {
-  "name": "",
-  "homePage": "",
-  "repos": {
-    "https://github.com/nf-core/modules.git": {
-      "modules": {
-        "nf-core": {
-          "filtlong": {
-            "branch": "master",
-            "git_sha": "b4c8ac68ffcdabac3f63aaa5e7420b175e1d8d76",
-            "installed_by": ["modules"]
-          },
-          "nanoplot": {
-            "branch": "master",
-            "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
-            "installed_by": ["modules"]
-          },
-          "porechop/porechop": {
-            "branch": "master",
-            "git_sha": "1d68c7f248d1a480c5959548a9234602b771199e",
-            "installed_by": ["modules"]
-          },
-          "vsearch/cluster": {
-            "branch": "master",
-            "git_sha": "d97b335eb448073c1b680710303c02a55f40c77c",
-            "installed_by": ["modules"]
-          },
-          "vsearch/sintax": {
-            "branch": "master",
-            "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
-            "installed_by": ["modules"]
-          }
+    "name": "",
+    "homePage": "",
+    "repos": {
+        "https://github.com/nf-core/modules.git": {
+            "modules": {
+                "nf-core": {
+                    "filtlong": {
+                        "branch": "master",
+                        "git_sha": "b4c8ac68ffcdabac3f63aaa5e7420b175e1d8d76",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "nanoplot": {
+                        "branch": "master",
+                        "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "porechop/porechop": {
+                        "branch": "master",
+                        "git_sha": "1d68c7f248d1a480c5959548a9234602b771199e",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "vsearch/cluster": {
+                        "branch": "master",
+                        "git_sha": "d97b335eb448073c1b680710303c02a55f40c77c",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    },
+                    "vsearch/sintax": {
+                        "branch": "master",
+                        "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
+                        "installed_by": [
+                            "modules"
+                        ]
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }
