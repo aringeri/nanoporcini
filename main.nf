@@ -13,6 +13,9 @@ include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
 include { FILTLONG } from './modules/nf-core/filtlong'
 
 include { ITSXPRESS } from './modules/local/itsxpress'
+include { ITSX } from './modules/local/itsx'
+
+include { SEQKIT_FQ2FA } from './modules/local/seqkit/fq2fa'
 // include { VSEARCH_RELABEL } from './modules/local/vsearch/relabel'
 include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
 include { FASTQ_CONCAT } from './modules/local/fastq_concat'
@@ -64,6 +67,8 @@ workflow {
     )
 
     its1 = ITSXPRESS(filtered.reads).reads
+    
+    ITSX(SEQKIT_FQ2FA(filtered.reads).fasta)
     
     all_reads = its1.collect {
       (meta, read) = it

@@ -7,18 +7,29 @@ process FASTQ_CONCAT {
         'docker.io/biocontainers/biocontainers:v1.2.0_cv1' }"
 
     input:
-    tuple val(meta), path("reads*.fastq.gz")
+    tuple val(meta), path(zipped_reads, name: "zipped*.gz", stageAs: "dir*/*")
     
     output:
-    tuple val(meta), path( "*.fastq.gz" ), emit: merged_reads
+    tuple val(meta), path( "*.gz" ), emit: merged_reads
     path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
+
+    prefix = task.ext.prefix ?: "merged_reads"
+    input_files = "$zipped_reads".tokenize()
+    if (input_files.every { it.endsWith("fastq.gz") }) {
+        ext = "fastq"
+    } else if (input_files.every { it.endsWith("fasta.gz") }) {
+        ext = "fasta"
+    } else {
+        error "input list of zipped reads must have 'fastq.gz' or 'fasta.gz' ending: $zipped_reads"
+    }
+
     """
-    gunzip -c reads*.fastq.gz | gzip > merged_reads.fastq.gz
+    gunzip -c ${zipped_reads}.gz | gzip > ${prefix}.${ext}.gz
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
