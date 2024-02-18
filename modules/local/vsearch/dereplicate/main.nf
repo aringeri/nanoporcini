@@ -8,10 +8,10 @@ process VSEARCH_DEREPLICATE {
         'biocontainers/vsearch:2.21.1--h95f258a_0' }"
 
     input:
-    tuple val(meta), path(fasta)
+    tuple val(meta), path(fastx)
  
     output:
-    tuple val(meta), path("*.fastq"), emit: reads
+    tuple val(meta), path("*.fast*"), emit: reads
     tuple val(meta), path("*.log"), emit: logs
     path "versions.yml", emit: versions
 
@@ -22,10 +22,20 @@ process VSEARCH_DEREPLICATE {
     // def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
 
+    if ("$fastx".endsWith(".fastq.gz")) {
+        out_cmd = "--fastqout"
+        ext = "fastq"
+    } else if ("$fastx".endsWith(".fasta.gz")) {
+        out_cmd = "--fastaout"
+        ext = "fasta"
+    } else {
+        error "input file must have ending '.fasta.gz' or 'fastq.gz': $fastx"
+    }
+
     """
     vsearch \\
-        --fastx_uniques $fasta \\
-        --fastqout ${prefix}.fastq \\
+        --fastx_uniques $fastx \\
+        $out_cmd ${prefix}.$ext \\
         --sizein \\
         --sizeout \\
         --log vsearch.log \\

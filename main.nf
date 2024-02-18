@@ -9,6 +9,7 @@ include { NANOPLOT } from './modules/nf-core/nanoplot'
 include { NANOPLOT as NANOPLOT_2 } from './modules/nf-core/nanoplot'
 include { NANOPLOT_BULK } from './modules/local/nanoplot_bulk'
 include { NANOPLOT_BULK as NANOPLOT_BULK_2 } from './modules/local/nanoplot_bulk'
+include { NANOPLOT_BULK as NANOPLOT_BULK_3 } from './modules/local/nanoplot_bulk'
 include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
 include { FILTLONG } from './modules/nf-core/filtlong'
 
@@ -26,11 +27,23 @@ include { VSEARCH_CLUSTER_A } from './modules/local/vsearch/cluster'
 include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
 include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
 
+include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_reads'
 include { FORMAT_CONSENSUS_LABELS } from './modules/local/format_consensus_labels'
 // include { VSEARCH_CLUSTER } from './modules/nf-core/vsearch/cluster'
 include { VSEARCH_SINTAX } from './modules/nf-core/vsearch/sintax'
 
 include { PHYLOSEQ } from './modules/local/phyloseq'
+
+include { CLUSTER } from './workflows/vsearch_cluster'
+
+def collectWithId(id, ch) {
+  ch.collect {
+    (meta, read) = it
+    read
+  }.map {
+    [ [id: id], it]
+  }
+}
 
 workflow {
     ch_raw_reads = Channel.fromPath(params.input, checkIfExists: true)
@@ -45,6 +58,16 @@ workflow {
       }
     // must have ending '.fastq.gz'
     // NANOPLOT(ch_reads)
+
+    oriented = CUTADAPT_REORIENT_READS(ch_reads)
+    NANOPLOT_BULK_3(
+      oriented.reads.collect{ tuple -> 
+          (meta, reads) = tuple
+          reads
+        }.map{ reads -> 
+          [ [id: "cutadapt-oriented"], reads ]
+        }
+    )
 
     chopped = PORECHOP_PORECHOP(ch_reads)
 
@@ -68,7 +91,7 @@ workflow {
 
     its1 = ITSXPRESS(filtered.reads).reads
     
-    ITSX(SEQKIT_FQ2FA(filtered.reads).fasta)
+    itsx_its1 = ITSX(SEQKIT_FQ2FA(filtered.reads).fasta).its1
     
     all_reads = its1.collect {
       (meta, read) = it
@@ -76,17 +99,20 @@ workflow {
     }.map {
       [ [id: "all-reads", foo:"bar"], it]
     }
-    
-    prepped_for_vsearch = FASTQ_CONCAT(all_reads).merged_reads 
-      | RENAME_BARCODE_LABEL
 
-    cluster_out = VSEARCH_DEREPLICATE(prepped_for_vsearch.reads).reads
-      | VSEARCH_CLUSTER_A
+    combined = collectWithId("all_reads_itsx_its1", itsx_its1)
+    cluster_out = CLUSTER(combined)
+      
+    // prepped_for_vsearch = FASTQ_CONCAT(all_reads).merged_reads 
+    //   | RENAME_BARCODE_LABEL
+
+    // cluster_out = VSEARCH_DEREPLICATE(prepped_for_vsearch.reads).reads
+    //   | VSEARCH_CLUSTER_A
     
-    VSEARCH_UCHIME_REF(
-      VSEARCH_UCHIME_DENOVO(cluster_out.centroids).nonchimeras, 
-      params.unite_db
-    )
+    // VSEARCH_UCHIME_REF(
+    //   VSEARCH_UCHIME_DENOVO(cluster_out.centroids).nonchimeras, 
+    //   params.unite_db
+    // )
     
     consensus = FORMAT_CONSENSUS_LABELS(cluster_out.consensus).reads
     tax = VSEARCH_SINTAX(consensus, params.unite_db).tsv

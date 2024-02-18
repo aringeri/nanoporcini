@@ -29,7 +29,7 @@ process FASTQ_CONCAT {
     }
 
     """
-    gunzip -c ${zipped_reads}.gz | gzip > ${prefix}.${ext}.gz
+    gunzip -c $zipped_reads | gzip > ${prefix}.${ext}.gz
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

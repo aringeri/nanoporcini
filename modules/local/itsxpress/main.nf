@@ -22,6 +22,7 @@ process ITSXPRESS {
     """
     itsxpress \\
         --fastq $fastq \\
+        --single_end \\
         $args \\
         --threads $task.cpus \\
         --outfile ${prefix}.fastq.gz

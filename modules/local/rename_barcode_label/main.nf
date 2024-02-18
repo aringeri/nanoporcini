@@ -25,15 +25,17 @@ process RENAME_BARCODE_LABEL {
     input_files = "$zipped_reads".tokenize()
     if (input_files.every { it.endsWith("fastq.gz") }) {
         ext = "fastq"
+        lines_per_record = 4
     } else if (input_files.every { it.endsWith("fasta.gz") }) {
         ext = "fasta"
+        lines_per_record = 2
     } else {
         error "input list of zipped reads must have 'fastq.gz' or 'fasta.gz' ending: $zipped_reads"
     }
 
     """
     gunzip -c $zipped_reads \\
-        | awk 'NR%4==1 {\$1=\$1";"substr(\$8,0,index(\$8,"=")-1)"label="substr(\$8,index(\$8,"=")+1,length(\$8))";"} {print}' \\
+        | awk 'NR%$lines_per_record==1 {\$1=\$1";"substr(\$8,0,index(\$8,"=")-1)"label="substr(\$8,index(\$8,"=")+1,length(\$8))";"} {print}' \\
         | gzip > ${prefix}.${ext}.gz
     
     cat <<-END_VERSIONS > versions.yml
