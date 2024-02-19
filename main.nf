@@ -10,6 +10,8 @@ include { NANOPLOT as NANOPLOT_2 } from './modules/nf-core/nanoplot'
 include { NANOPLOT_BULK } from './modules/local/nanoplot_bulk'
 include { NANOPLOT_BULK as NANOPLOT_BULK_2 } from './modules/local/nanoplot_bulk'
 include { NANOPLOT_BULK as NANOPLOT_BULK_3 } from './modules/local/nanoplot_bulk'
+include { NANOPLOT_BULK as NANOPLOT_BULK_4 } from './modules/local/nanoplot_bulk'
+include { NANOPLOT_SINGLE } from './modules/local/nanoplot_single'
 include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
 include { FILTLONG } from './modules/nf-core/filtlong'
 
@@ -22,6 +24,7 @@ include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
 include { FASTQ_CONCAT } from './modules/local/fastq_concat'
 
 include { VSEARCH_DEREPLICATE } from './modules/local/vsearch/dereplicate'
+include { VSEARCH_DEREPLICATE as VSEARCH_DEREPLICATE_2 } from './modules/local/vsearch/dereplicate'
 
 include { VSEARCH_CLUSTER_A } from './modules/local/vsearch/cluster'
 include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
@@ -61,18 +64,13 @@ workflow {
 
     oriented = CUTADAPT_REORIENT_READS(ch_reads)
     NANOPLOT_BULK_3(
-      oriented.reads.collect{ tuple -> 
-          (meta, reads) = tuple
-          reads
-        }.map{ reads -> 
-          [ [id: "cutadapt-oriented"], reads ]
-        }
+      collectWithId("cutadapt-oriented", oriented.reads)
     )
 
-    chopped = PORECHOP_PORECHOP(ch_reads)
+    //chopped = PORECHOP_PORECHOP(ch_reads)
 
     filtered = FILTLONG(
-      chopped.reads.map{ ch -> 
+      oriented.reads.map{ ch -> 
         (meta, reads) = ch
         shortreads = []
         [meta, shortreads, reads] 
@@ -81,16 +79,27 @@ workflow {
 
     // NANOPLOT_2(filtered.reads)
     NANOPLOT_BULK_2(
-      filtered.reads.collect{ tuple -> 
-          (meta, reads) = tuple
-          reads
-        }.map{ reads -> 
-          [ [id: "filtered"], reads ]
-        }
+      collectWithId("filtered", filtered.reads)
     )
 
-    its1 = ITSXPRESS(filtered.reads).reads
+    all_reads = collectWithId("all-reads-filtered", filtered.reads)
+    derep = (FASTQ_CONCAT(all_reads).merged_reads 
+      | RENAME_BARCODE_LABEL).reads
+      | VSEARCH_DEREPLICATE
     
+    NANOPLOT_SINGLE(derep.reads)
+
+    its = ITSXPRESS(derep.reads).reads
+    VSEARCH_DEREPLICATE_2(
+      its.map { ch -> 
+        (meta, reads) = ch
+        meta2 = meta.clone()
+        meta2.id = "full-its"
+        [meta2, reads]
+      }
+    )
+    
+    /*
     itsx_its1 = ITSX(SEQKIT_FQ2FA(filtered.reads).fasta).its1
     
     all_reads = its1.collect {
@@ -122,5 +131,5 @@ workflow {
         (meta, tax_tsv, otu_tsv) = it
         [meta["id"], tax_tsv, otu_tsv]
       }
-    )
+    )*/
 }
