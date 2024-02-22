@@ -2,7 +2,9 @@
 nextflow.enable.dsl = 2
 
 params.input = "$baseDir/data/sub100/*.fastq.gz"
-params.unite_db = "$baseDir/data/db/utax_reference_dataset_all_25.07.2023.fasta.gz"
+// params.unite_db = "$baseDir/data/db/utax_reference_dataset_all_25.07.2023.fasta.gz"
+params.unite_db = "$baseDir/data/db/UNITE-full-all-10.15156-BIO-2938070-20230725/sh_general_release_dynamic_s_all_25.07.2023.fasta"
+params.sintax_db = "$baseDir/data/db/unite-sintax.fasta"
 params.outdir = 'output'
 
 include { NANOPLOT } from './modules/nf-core/nanoplot'
@@ -19,6 +21,7 @@ include { ITSXPRESS } from './modules/local/itsxpress'
 include { ITSX } from './modules/local/itsx'
 
 include { SEQKIT_FQ2FA } from './modules/local/seqkit/fq2fa'
+include { SEQKIT_REMOVE_CHIMERAS } from './modules/local/seqkit/remove'
 // include { VSEARCH_RELABEL } from './modules/local/vsearch/relabel'
 include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
 include { FASTQ_CONCAT } from './modules/local/fastq_concat'
@@ -68,7 +71,6 @@ workflow {
     )
 
     //chopped = PORECHOP_PORECHOP(ch_reads)
-
     filtered = FILTLONG(
       oriented.reads.map{ ch -> 
         (meta, reads) = ch
@@ -82,22 +84,49 @@ workflow {
       collectWithId("filtered", filtered.reads)
     )
 
-    all_reads = collectWithId("all-reads-filtered", filtered.reads)
-    derep = (FASTQ_CONCAT(all_reads).merged_reads 
+    // all_reads = collectWithId("all-reads-filtered", filtered.reads)
+    derep = (ITSXPRESS(filtered.reads).reads 
       | RENAME_BARCODE_LABEL).reads
-      | VSEARCH_DEREPLICATE
+      | VSEARCH_DEREPLICATE //per sample
     
-    NANOPLOT_SINGLE(derep.reads)
+    // NANOPLOT_SINGLE(derep.reads)
 
-    its = ITSXPRESS(derep.reads).reads
-    VSEARCH_DEREPLICATE_2(
-      its.map { ch -> 
-        (meta, reads) = ch
-        meta2 = meta.clone()
-        meta2.id = "full-its"
-        [meta2, reads]
+    NANOPLOT_BULK_4(
+      collectWithId("full-its-derep", derep.reads)
+    )
+
+    uchime_denovo = VSEARCH_UCHIME_DENOVO(derep.reads)
+    uchime_ref = VSEARCH_UCHIME_REF(
+      SEQKIT_FQ2FA(derep.reads).fasta, 
+      params.unite_db)
+
+    nonchimeras = SEQKIT_REMOVE_CHIMERAS(
+      derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
+    )
+
+    cluster_out = FASTQ_CONCAT(collectWithId("all_reads_full_its", nonchimeras.nonchimeras)).merged_reads
+      // | VSEARCH_DEREPLICATE_2).reads
+      | VSEARCH_CLUSTER_A
+    
+    consensus = FORMAT_CONSENSUS_LABELS(cluster_out.consensus).reads
+    tax = VSEARCH_SINTAX(consensus, params.sintax_db).tsv
+
+    PHYLOSEQ (
+      tax.join(cluster_out.otu).map {
+        (meta, tax_tsv, otu_tsv) = it
+        [meta["id"], tax_tsv, otu_tsv]
       }
     )
+
+    // its = ITSXPRESS(derep.reads).reads
+    // VSEARCH_DEREPLICATE_2(
+    //   its.map { ch -> 
+    //     (meta, reads) = ch
+    //     meta2 = meta.clone()
+    //     meta2.id = "full-its"
+    //     [meta2, reads]
+    //   }
+    // )
     
     /*
     itsx_its1 = ITSX(SEQKIT_FQ2FA(filtered.reads).fasta).its1

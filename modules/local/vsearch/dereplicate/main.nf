@@ -11,7 +11,7 @@ process VSEARCH_DEREPLICATE {
     tuple val(meta), path(fastx)
  
     output:
-    tuple val(meta), path("*.fast*"), emit: reads
+    tuple val(meta), path("*.fast*.gz"), emit: reads
     tuple val(meta), path("*.log"), emit: logs
     path "versions.yml", emit: versions
 
@@ -31,15 +31,18 @@ process VSEARCH_DEREPLICATE {
     } else {
         error "input file must have ending '.fasta.gz' or 'fastq.gz': $fastx"
     }
+    outfile = "${prefix}.$ext"
 
     """
     vsearch \\
         --fastx_uniques $fastx \\
-        $out_cmd ${prefix}.$ext \\
+        $out_cmd $outfile \\
         --sizein \\
         --sizeout \\
         --log vsearch.log \\
         --threads $task.cpus
+    
+    gzip $outfile
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
