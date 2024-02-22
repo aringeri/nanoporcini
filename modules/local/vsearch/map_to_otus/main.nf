@@ -1,4 +1,4 @@
-process VSEARCH_DEREPLICATE {
+process VSEARCH_MAP_READS_TO_OTUS {
     tag "${meta.id}"
     label 'process_low'
 
@@ -8,43 +8,38 @@ process VSEARCH_DEREPLICATE {
         'biocontainers/vsearch:2.21.1--h95f258a_0' }"
 
     input:
-    tuple val(meta), path(fastx)
+    tuple val(meta), path(all_reads)
+    tuple val(meta), path(otus)
  
     output:
-    tuple val(meta), path("*.fast*.gz"), emit: reads
+    tuple val(meta), path("*.tsv"), emit: otu_tab
     tuple val(meta), path("*.uc"), emit: uc
-    tuple val(meta), path("*.log"), emit: logs
+    tuple val(meta), path("*.log"), emit: log
     path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    // def args = task.ext.args ?: ''
+    def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-
-    if ("$fastx".endsWith(".fastq.gz")) {
-        out_cmd = "--fastqout"
-        ext = "fastq"
-    } else if ("$fastx".endsWith(".fasta.gz")) {
-        out_cmd = "--fastaout"
-        ext = "fasta"
-    } else {
-        error "input file must have ending '.fasta.gz' or 'fastq.gz': $fastx"
-    }
-    outfile = "${prefix}.$ext"
 
     """
     vsearch \\
-        --fastx_uniques $fastx \\
-        $out_cmd $outfile \\
+        --usearch_global $all_reads \\
+        --db $otus \\
+        --id 0.98 \\
+        --threads $task.cpus \\
+        --strand plus \\
         --sizein \\
         --sizeout \\
-        --uc ${prefix}.uc \\
+        --fasta_width 0 \\
+        --qmask none \\
+        --dbmask none \\
         --log vsearch.log \\
-        --threads $task.cpus
-    
-    gzip $outfile
+        --uc ${prefix}.uc \\
+        --otutabout ${prefix}.otus.tsv
+        
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

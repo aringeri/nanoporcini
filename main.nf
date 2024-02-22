@@ -21,6 +21,7 @@ include { ITSXPRESS } from './modules/local/itsxpress'
 include { ITSX } from './modules/local/itsx'
 
 include { SEQKIT_FQ2FA } from './modules/local/seqkit/fq2fa'
+include { SEQKIT_FQ2FA as SEQKIT_FQ2FA_2 } from './modules/local/seqkit/fq2fa'
 include { SEQKIT_REMOVE_CHIMERAS } from './modules/local/seqkit/remove'
 // include { VSEARCH_RELABEL } from './modules/local/vsearch/relabel'
 include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
@@ -32,6 +33,7 @@ include { VSEARCH_DEREPLICATE as VSEARCH_DEREPLICATE_2 } from './modules/local/v
 include { VSEARCH_CLUSTER_A } from './modules/local/vsearch/cluster'
 include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
 include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
+include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
 include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_reads'
 include { FORMAT_CONSENSUS_LABELS } from './modules/local/format_consensus_labels'
@@ -104,15 +106,18 @@ workflow {
       derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
     )
 
-    cluster_out = FASTQ_CONCAT(collectWithId("all_reads_full_its", nonchimeras.nonchimeras)).merged_reads
-      // | VSEARCH_DEREPLICATE_2).reads
-      | VSEARCH_CLUSTER_A
+    all_reads = FASTQ_CONCAT(collectWithId("all_reads_full_its", nonchimeras.nonchimeras)).merged_reads
+    all_reads_derep = VSEARCH_DEREPLICATE_2(all_reads).reads
     
-    consensus = FORMAT_CONSENSUS_LABELS(cluster_out.consensus).reads
-    tax = VSEARCH_SINTAX(consensus, params.sintax_db).tsv
+    cluster_out = VSEARCH_CLUSTER_A(all_reads_derep)
+    
+    all_reads_fa = SEQKIT_FQ2FA_2(all_reads).fasta
+    otus = VSEARCH_MAP_READS_TO_OTUS(all_reads_fa, cluster_out.centroids)
+    
+    tax = VSEARCH_SINTAX(cluster_out.centroids, params.sintax_db).tsv
 
     PHYLOSEQ (
-      tax.join(cluster_out.otu).map {
+      tax.join(otus.otu_tab).map {
         (meta, tax_tsv, otu_tsv) = it
         [meta["id"], tax_tsv, otu_tsv]
       }
