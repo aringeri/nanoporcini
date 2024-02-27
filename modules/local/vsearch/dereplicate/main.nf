@@ -38,6 +38,7 @@ process VSEARCH_DEREPLICATE {
     vsearch \\
         --fastx_uniques $fastx \\
         $out_cmd $outfile \\
+        --strand plus \\
         --sizein \\
         --sizeout \\
         --uc ${prefix}.uc \\
