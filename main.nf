@@ -23,7 +23,6 @@ include { ITSX } from './modules/local/itsx'
 include { SEQKIT_FQ2FA } from './modules/local/seqkit/fq2fa'
 include { SEQKIT_FQ2FA as SEQKIT_FQ2FA_2 } from './modules/local/seqkit/fq2fa'
 include { SEQKIT_REMOVE_CHIMERAS } from './modules/local/seqkit/remove'
-// include { VSEARCH_RELABEL } from './modules/local/vsearch/relabel'
 include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
 include { FASTQ_CONCAT } from './modules/local/fastq_concat'
 
@@ -37,7 +36,6 @@ include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
 include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_reads'
 include { FORMAT_CONSENSUS_LABELS } from './modules/local/format_consensus_labels'
-// include { VSEARCH_CLUSTER } from './modules/nf-core/vsearch/cluster'
 include { VSEARCH_SINTAX } from './modules/nf-core/vsearch/sintax'
 
 include { PHYLOSEQ } from './modules/local/phyloseq'
