@@ -7,6 +7,7 @@ qiime tools import --type 'FeatureData[Sequence]' \
     --output-path UNITE.qza
 
 qiime tools import --type 'FeatureData[Taxonomy]' \
+    --input-format HeaderlessTSVTaxonomyFormat \
     --input-path ../data/db/unite-qiime-2020725/sh_taxonomy_qiime_ver9_99_all_25.07.2023.txt \
     --output-path UNITE_TAX.qza
 
@@ -19,6 +20,7 @@ qiime feature-classifier classify-consensus-blast \
     --o-classification classifications.qza \
     --o-search-results search-results.qza \
     --verbose \
+    --p-num-threads 4 \
     --parallel
 
 
@@ -33,3 +35,15 @@ biom convert \
 qiime tools import --type 'FeatureTable[Frequency]' \                                                                                               ✔  4s  qiime2-amplicon-2024.2 Py
   --input-path otus.biom \
   --output-path otus.gza
+
+
+
+
+awk -vRS=">" -vORS="\n" -vFS="\n" -vOFS="\t" '                                                                                                                                   PIPE|0 ✔  11s  base Py
+   NR>1 {split($1, arr, "|"); print(arr[3]"_"arr[2]"_"arr[4]"\t"arr[5])}
+  ' data/db/UNITE-full-all-10.15156-BIO-2938070-20230725/sh_general_release_dynamic_s_all_25.07.2023.fasta
+
+awk -vRS=">" -vORS="\n" -vFS="\n" -vOFS="\t" '                                                                                                                                PIPE|0 ✔  29s  base Py
+   NR>1 {split($1, arr, "|"); print(">"arr[3]"_"arr[2]"_"arr[4]"\n"$2)}
+  ' data/db/UNITE-full-all-10.15156-BIO-2938070-20230725/sh_general_release_dynamic_s_all_25.07.2023.fasta  \
+  > qiime/sh_general_release_dynamic_s_all_25.07.2023_qiime.fasta
