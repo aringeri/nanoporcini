@@ -38,7 +38,9 @@ include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_read
 include { FORMAT_CONSENSUS_LABELS } from './modules/local/format_consensus_labels'
 include { VSEARCH_SINTAX } from './modules/nf-core/vsearch/sintax'
 
-include { Classify } from "./workflows/classify" 
+include { Classify } from "./workflows/classify"
+include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
+include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
 
 include { PHYLOSEQ } from './modules/local/phyloseq'
 
@@ -114,7 +116,16 @@ workflow {
     all_reads_fa = SEQKIT_FQ2FA_2(all_reads).fasta
     otus = VSEARCH_MAP_READS_TO_OTUS(all_reads_fa, cluster_out.centroids)
     
-    Classify(cluster_out.centroids)
+    uniteDB = PrepUniteDBForQiime(params.unite_db)
+
+    cResults = Classify(
+      cluster_out.centroids,
+      uniteDB.blastDB,
+      uniteDB.taxonomy
+    )
+
+    LoadTaxTableIntoPhyloseq(cResults.classifications.map{it[1]})
+
     tax = VSEARCH_SINTAX(cluster_out.centroids, params.sintax_db).tsv
 
     PHYLOSEQ (

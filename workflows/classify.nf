@@ -1,3 +1,5 @@
+include { ImportFastaIntoQiime } from "./qiime/import" 
+
 process UnGzip {
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://containers.biocontainers.pro/s3/SingImgsRepo/biocontainers/v1.2.0_cv1/biocontainers_v1.2.0_cv1.img' :
@@ -90,18 +92,21 @@ process ExportQiimeData {
 workflow Classify {
     take:
         reads // reads to classify in fasta format
-        //qiime_db // BLASTDB -- qza file
-        //qiime_taxonomy // FeatureData[Taxonomy] -- qza file
+        qiime_db // BLASTDB -- qza file
+        qiime_taxonomy // FeatureData[Taxonomy] -- qza file
     
     main:
         qiime = UnGzip(reads) | ImportFastaQiime
 
         classifyResults = ClassifyConsensusBlast(
             qiime.sequences,
-            Channel.value("$baseDir/qiime/UNITE_DB_GEN.qza"),
-            Channel.value("$baseDir/qiime/UNITE_TAX_GEN.qza")
+            qiime_db,
+            qiime_taxonomy
         )
 
-        ExportQiimeData(classifyResults.classifications)
+        export = ExportQiimeData(classifyResults.classifications)
         // ExportQiimeData(classifyResults.searchResults)
+    
+    emit:
+        classifications = export.exported
 }
