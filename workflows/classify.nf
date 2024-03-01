@@ -89,7 +89,7 @@ process ExportQiimeData {
     """
 }
 
-workflow Classify {
+workflow ClassifyTaxonomyBlast {
     take:
         reads // reads to classify in fasta format
         qiime_db // BLASTDB -- qza file

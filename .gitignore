@@ -2,3 +2,5 @@
 **.swp
 work/*
 **.DS_Store
+.vscode/*
+data/db/*

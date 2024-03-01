@@ -19,8 +19,8 @@ process ImportQiime2TaxonomyIntoPhyloseq {
     #!/usr/bin/env Rscript
     library(speedytax)
 
-    taxTable  <- import_qiime2_tax_table(\"$tax_tsv\")
-    saveRDS(taxTable, file = paste0(\"$prefix\", ".rds"))
+    taxTable  <- import_qiime2_tax_table("$tax_tsv")
+    saveRDS(taxTable, file = paste0("$prefix", ".rds"))
     """
 }
 

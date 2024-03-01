@@ -6,6 +6,7 @@ params.input = "$baseDir/data/sub100/*.fastq.gz"
 params.unite_db = "$baseDir/data/db/UNITE-full-all-10.15156-BIO-2938070-20230725/sh_general_release_dynamic_s_all_25.07.2023.fasta"
 params.sintax_db = "$baseDir/data/db/unite-sintax.fasta"
 params.outdir = 'output'
+params.classifier = 'blast'
 
 include { NANOPLOT } from './modules/nf-core/nanoplot'
 include { NANOPLOT as NANOPLOT_2 } from './modules/nf-core/nanoplot'
@@ -38,11 +39,14 @@ include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_read
 include { FORMAT_CONSENSUS_LABELS } from './modules/local/format_consensus_labels'
 include { VSEARCH_SINTAX } from './modules/nf-core/vsearch/sintax'
 
-include { Classify } from "./workflows/classify"
+
 include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
 include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
+include { ImportSintaxTaxonomyIntoPhyloseq } from './workflows/phyloseq/import/sintax'
+include { ClassifyTaxonomySintax } from './workflows/classify_taxonomy_sintax'
+include { ClassifyTaxonomyBlast } from "./workflows/classify"
 
-include { PHYLOSEQ } from './modules/local/phyloseq'
+include { PHYLOSEQ; CreatePhyloseqObject } from './modules/local/phyloseq'
 
 include { CLUSTER } from './workflows/vsearch_cluster'
 
@@ -88,7 +92,6 @@ workflow {
       collectWithId("filtered", filtered.reads)
     )
 
-    // all_reads = collectWithId("all-reads-filtered", filtered.reads)
     derep = (ITSXPRESS(filtered.reads).reads 
       | RENAME_BARCODE_LABEL).reads
       | VSEARCH_DEREPLICATE //per sample
@@ -115,67 +118,36 @@ workflow {
     
     all_reads_fa = SEQKIT_FQ2FA_2(all_reads).fasta
     otus = VSEARCH_MAP_READS_TO_OTUS(all_reads_fa, cluster_out.centroids)
-    
-    uniteDB = PrepUniteDBForQiime(params.unite_db)
 
-    cResults = Classify(
-      cluster_out.centroids,
-      uniteDB.blastDB,
-      uniteDB.taxonomy
-    )
+    if (params.classifier == "blast") {
+      uniteDB = PrepUniteDBForQiime(params.unite_db)
 
-    LoadTaxTableIntoPhyloseq(cResults.classifications.map{it[1]})
+      cResults = ClassifyTaxonomyBlast(
+        cluster_out.centroids,
+        uniteDB.blastDB,
+        uniteDB.taxonomy
+      )
 
-    tax = VSEARCH_SINTAX(cluster_out.centroids, params.sintax_db).tsv
+      tax_rds = LoadTaxTableIntoPhyloseq(cResults.classifications.map{it[1]})
+    } else if (params.classifier == "sintax") {
+      tax_rds = VSEARCH_SINTAX(cluster_out.centroids, params.sintax_db)
+        .tsv
+        .map { 
+          (meta, tsv) = it
+          tsv
+        }
+        | ImportSintaxTaxonomyIntoPhyloseq
 
-    PHYLOSEQ (
-      tax.join(otus.otu_tab).map {
-        (meta, tax_tsv, otu_tsv) = it
-        [meta["id"], tax_tsv, otu_tsv]
-      }
-    )
-
-    // its = ITSXPRESS(derep.reads).reads
-    // VSEARCH_DEREPLICATE_2(
-    //   its.map { ch -> 
-    //     (meta, reads) = ch
-    //     meta2 = meta.clone()
-    //     meta2.id = "full-its"
-    //     [meta2, reads]
-    //   }
-    // )
-    
-    /*
-    itsx_its1 = ITSX(SEQKIT_FQ2FA(filtered.reads).fasta).its1
-    
-    all_reads = its1.collect {
-      (meta, read) = it
-      read
-    }.map {
-      [ [id: "all-reads", foo:"bar"], it]
+    } else {
+      error "input param 'classifier' not defined or not supported: ${params.classifier}"
     }
 
-    combined = collectWithId("all_reads_itsx_its1", itsx_its1)
-    cluster_out = CLUSTER(combined)
-      
-    // prepped_for_vsearch = FASTQ_CONCAT(all_reads).merged_reads 
-    //   | RENAME_BARCODE_LABEL
-
-    // cluster_out = VSEARCH_DEREPLICATE(prepped_for_vsearch.reads).reads
-    //   | VSEARCH_CLUSTER_A
-    
-    // VSEARCH_UCHIME_REF(
-    //   VSEARCH_UCHIME_DENOVO(cluster_out.centroids).nonchimeras, 
-    //   params.unite_db
-    // )
-    
-    consensus = FORMAT_CONSENSUS_LABELS(cluster_out.consensus).reads
-    tax = VSEARCH_SINTAX(consensus, params.unite_db).tsv
-
-    PHYLOSEQ (
-      tax.join(cluster_out.otu).map {
-        (meta, tax_tsv, otu_tsv) = it
-        [meta["id"], tax_tsv, otu_tsv]
+    CreatePhyloseqObject(
+      // careful with merge when using channels with multiple values.
+      otus.otu_tab.merge(tax_rds).map {
+        (meta, otu, tax) = it
+        // re-order parameters
+        [meta, tax, otu]
       }
-    )*/
+    )
 }
