@@ -10,6 +10,10 @@ process ImportFastaIntoQiime {
     script:
     
     """
+    export MPLCONFIGDIR="./mplconfigdir"
+    export NUMBA_CACHE_DIR="./numbacache"
+
+
     qiime tools import --type 'FeatureData[Sequence]' \\
         --input-path $fasta \\
         --output-path ${fasta.baseName}.qza
@@ -28,6 +32,9 @@ process ImportTaxonomyFeatureDataIntoQiime {
     script:
     
     """
+    export MPLCONFIGDIR="./mplconfigdir"
+    export NUMBA_CACHE_DIR="./numbacache"
+
     qiime tools import --type 'FeatureData[Taxonomy]' \\
         --input-format HeaderlessTSVTaxonomyFormat \\
         --input-path $taxonomy_tsv \\

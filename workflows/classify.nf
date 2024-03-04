@@ -34,6 +34,9 @@ process ImportFastaQiime {
     script:
     
     """
+    export NUMBA_CACHE_DIR="./numbacache"
+    export MPLCONFIGDIR="./mplconfigdir"
+
     qiime tools import --type 'FeatureData[Sequence]' \\
         --input-path $fasta \\
         --output-path ${fasta.baseName}.qza
@@ -55,6 +58,9 @@ process ClassifyConsensusBlast {
     script:
     
     """
+    export NUMBA_CACHE_DIR="./numbacache"
+    export MPLCONFIGDIR="./mplconfigdir"
+
     qiime feature-classifier classify-consensus-blast \\
         --i-query $toClassify \\
         --i-blastdb $blastDB \\
@@ -81,6 +87,8 @@ process ExportQiimeData {
     }
 
     """
+    export NUMBA_CACHE_DIR="./numbacache"
+    export MPLCONFIGDIR="./mplconfigdir"
     mkdir output/
 
     qiime tools export \\

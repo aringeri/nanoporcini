@@ -33,6 +33,9 @@ process MakeBlastDB {
 
     script:
     """
+    export MPLCONFIGDIR="./mplconfigdir"
+    export NUMBA_CACHE_DIR="./numbacache"
+
     qiime feature-classifier makeblastdb \\
         --i-sequences $db_seqs_qza \\
         --o-database ${db_seqs_qza.baseName}.blast.qza
