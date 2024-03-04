@@ -24,7 +24,7 @@ process ImportQiime2TaxonomyIntoPhyloseq {
     """
 }
 
-process TweakHeadersForSpeedytax {
+process TweakTaxTableForSpeedytax {
     container "docker.io/biocontainers/biocontainers:v1.2.0_cv1"
 
     input:
@@ -41,7 +41,10 @@ process TweakHeadersForSpeedytax {
     """
     mkdir output/
 
+    # Rename 'Consensus' header to 'Confidence'
+    # Replace separator in Taxon column from ';' to '; ' (has a space).
     sed '1s/Consensus/Confidence/' $tax_tsv \\
+        | awk -vRS="\n" -vORS="\n" -vFS="\t" -vOFS="\t" 'NR == 1 {print \$0} NR > 1 {gsub(/;/, "; ", \$2); print}' \\
         > output/$tax_tsv
     """
 }
@@ -52,7 +55,7 @@ workflow LoadTaxTableIntoPhyloseq {
     
     main:
     
-    tax_rds = TweakHeadersForSpeedytax(tax_table_tsv)
+    tax_rds = TweakTaxTableForSpeedytax(tax_table_tsv)
         | ImportQiime2TaxonomyIntoPhyloseq
     
     emit:
