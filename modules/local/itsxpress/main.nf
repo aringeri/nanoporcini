@@ -20,9 +20,12 @@ process ITSXPRESS {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
+    mkdir tmp/
+
     itsxpress \\
         --fastq $fastq \\
         --single_end \\
+        --tempdir ./tmp/ \\
         $args \\
         --threads $task.cpus \\
         --outfile ${prefix}.fastq.gz
