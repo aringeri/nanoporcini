@@ -43,7 +43,6 @@ include { VSEARCH_SINTAX } from './modules/nf-core/vsearch/sintax'
 include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
 include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
 include { ImportSintaxTaxonomyIntoPhyloseq } from './workflows/phyloseq/import/sintax'
-include { ClassifyTaxonomySintax } from './workflows/classify_taxonomy_sintax'
 include { ClassifyTaxonomyBlast } from "./workflows/classify"
 
 include { PHYLOSEQ; CreatePhyloseqObject } from './modules/local/phyloseq'
