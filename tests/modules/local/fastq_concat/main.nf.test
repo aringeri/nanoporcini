@@ -1,0 +1,89 @@
+nextflow_process {
+
+    name "Test Process FASTQ_CONCAT"
+    script "modules/local/fastq_concat/main.nf"
+    process "FASTQ_CONCAT"
+
+
+
+    test("Should combine contents of two fastq files") {
+        def sample1 = "${projectDir}/tests/test_data/zipped/fastq/Sample1.fastq.gz"
+        def sample2 = "${projectDir}/tests/test_data/zipped/fastq/Sample2.fastq.gz"
+        when {
+            process {
+                """
+                input[0] = tuple(
+                    [id: 'some id'], 
+                    [ file("$sample1"), 
+                      file("$sample2") 
+                    ]
+                )
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            with(process.out) {
+                assert merged_reads.size() == 1
+                (meta, merged) = merged_reads.get(0)
+                
+                assert meta == [id: "some id"]
+                assert path(merged).linesGzip.size() == 4 * 10 * 2
+
+                assert (path(sample1).linesGzip + path(sample2).linesGzip) 
+                    == path(merged).linesGzip
+            }
+        }
+    }
+    test("Should combine contents of two fasta files") {
+        def sample1 = "${projectDir}/tests/test_data/zipped/fasta/Sample1.fasta.gz"
+        def sample2 = "${projectDir}/tests/test_data/zipped/fasta/Sample2.fasta.gz"
+        when {
+            process {
+                """
+                input[0] = tuple(
+                    [id: 'some id'], 
+                    [ file("$sample1"), 
+                      file("$sample2") 
+                    ]
+                )
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            with(process.out) {
+                assert merged_reads.size() == 1
+                (meta, merged) = merged_reads.get(0)
+                
+                assert meta == [id: "some id"]
+                assert path(merged).linesGzip.size() == 2 * 10 * 2
+
+                assert (path(sample1).linesGzip + path(sample2).linesGzip) 
+                    == path(merged).linesGzip
+            }
+        }
+    }
+    test("Should fail when input file does not have expected filetype") {
+        when {
+            process {
+                """
+                input[0] = tuple(
+                    [id: 'some id'], 
+                    [ file("${projectDir}/tests/test_data/sample.txt") ]
+                )
+                """
+            }
+        }
+
+        then {
+            assert process.failed
+            assert process.errorReport.contains("input list of zipped reads must have 'fastq.gz' or 'fasta.gz' ending")
+        }
+    }
+
+}

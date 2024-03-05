@@ -4,3 +4,4 @@ work/*
 **.DS_Store
 .vscode/*
 data/db/*
+.nf-test*
