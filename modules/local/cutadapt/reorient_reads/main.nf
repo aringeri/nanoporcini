@@ -18,12 +18,13 @@ process CUTADAPT_REORIENT_READS {
         fwd_primer = "CTTGGTCATTTAGAGGAAGTAA" // ITSF1 (5'->3')
         rev_primer_rc = "CCCGTCTTGAAACACGG" // LRU3 (reverse complement)
         // error = "1"
-        action = "retain"
+        action = "trim"
         """
         cutadapt \\
             -a '$fwd_primer;required...$rev_primer_rc;required' \\
             --action=$action \\
-            --rc \\
+            --revcomp \\
+            --times 4 \\
             --cores=$task.cpus \\
             -o ${prefix}.reoriented.fastq.gz \\
             --untrimmed-output ${prefix}.nomatch.fastq.gz \\
@@ -36,7 +37,8 @@ process CUTADAPT_REORIENT_READS {
             -g '$fwd_primer' \\
             -a '$rev_primer_rc' \\
             --action=$action \\
-            --rc \\
+            --revcomp \\
+            --times 4 \\
             --cores=$task.cpus \\
             -o ${prefix}.partial-match.fastq.gz \\
             --untrimmed-output ${prefix}.unmatched.fastq.gz \\

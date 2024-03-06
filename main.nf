@@ -10,12 +10,23 @@ params.classifier = 'blast'
 
 include { NANOPLOT } from './modules/nf-core/nanoplot'
 include { NANOPLOT as NANOPLOT_2 } from './modules/nf-core/nanoplot'
-include { NANOPLOT_BULK } from './modules/local/nanoplot_bulk'
-include { NANOPLOT_BULK as NANOPLOT_BULK_2 } from './modules/local/nanoplot_bulk'
-include { NANOPLOT_BULK as NANOPLOT_BULK_3 } from './modules/local/nanoplot_bulk'
-include { NANOPLOT_BULK as NANOPLOT_BULK_4 } from './modules/local/nanoplot_bulk'
-include { NANOPLOT_BULK as NANOPLOT_BULK_5; NANOPLOT_BULK as NANOPLOT_BULK_6 } from './modules/local/nanoplot_bulk'
-include { NANOPLOT_SINGLE } from './modules/local/nanoplot_single'
+include { 
+  NANOPLOT_SINGLE;
+  NANOPLOT_SINGLE as NANOPLOT_SINGLE_2;
+  NANOPLOT_SINGLE as NANOPLOT_SINGLE_3 
+  } from './modules/local/nanoplot_single'
+include { 
+  NANOPLOT_BULK
+  NANOPLOT_BULK as NANOPLOT_BULK_2;
+  NANOPLOT_BULK as NANOPLOT_BULK_3;
+  NANOPLOT_BULK as NANOPLOT_BULK_4;
+  NANOPLOT_BULK as NANOPLOT_BULK_5; 
+  NANOPLOT_BULK as NANOPLOT_BULK_6;
+  NANOPLOT_BULK as NANOPLOT_BULK_7;
+  NANOPLOT_BULK as NANOPLOT_BULK_8;
+  NANOPLOT_BULK as NANOPLOT_BULK_9;
+  NANOPLOT_BULK as NANOPLOT_BULK_10;
+  } from './modules/local/nanoplot_bulk'
 include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
 include { FILTLONG } from './modules/nf-core/filtlong'
 
@@ -99,39 +110,11 @@ workflow {
       collectWithId("filtered", filtered.reads)
     )
 
-    /*filter_maxEE = VSEARCH_FILTER_MAX_EE(
-      oriented.reads
-        .map { 
-          (meta, reads) = it
-          meta2 = meta.clone()
-          meta2['rate'] = '0.01'
-          [meta2, reads]
-        },
-      0.01)// TODO parameterize max EE
-      
-    NANOPLOT_BULK_5(
-      collectWithId("filtered-max-ee-0.01", filter_maxEE.filtered_reads)
+    rename = RENAME_BARCODE_LABEL(filtered.reads).reads
+    NANOPLOT_BULK_7(
+      collectWithId("renamed", rename)
     )
-
-    filter_maxEE_02 = VSEARCH_FILTER_MAX_EE_2(
-      oriented.reads
-        .map { 
-          (meta, reads) = it
-          meta2 = meta.clone()
-          meta2['rate'] = '0.02'
-          [meta2, reads]
-        },
-      0.02)// TODO parameterize max EE
-    NANOPLOT_BULK_6(
-      collectWithId("filtered-max-ee-0.02", filter_maxEE_02.filtered_reads)
-    )*/
-
-
-    derep = RENAME_BARCODE_LABEL(filtered.reads).reads
-      | VSEARCH_DEREPLICATE //per sample
-    
-    // NANOPLOT_SINGLE(derep.reads)
-
+    derep = VSEARCH_DEREPLICATE(rename) //per sample
     NANOPLOT_BULK_4(
       collectWithId("full-its-derep", derep.reads)
     )
@@ -144,9 +127,19 @@ workflow {
     nonchimeras = SEQKIT_REMOVE_CHIMERAS(
       derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
     )
+    NANOPLOT_BULK_9(
+      collectWithId("non-chimeric", nonchimeras.nonchimeras)
+    )
 
     all_reads = FASTQ_CONCAT(collectWithId("all_reads_full_its", nonchimeras.nonchimeras)).merged_reads
+    NANOPLOT_SINGLE_2(all_reads)
+
     all_reads_derep = VSEARCH_DEREPLICATE_2(all_reads).reads
+    NANOPLOT_SINGLE_3(all_reads_derep.map {
+      (meta, reads) = it
+      [[id: 'all_reads_full_its_derep'], reads]
+    })
+
     
     cluster_out = VSEARCH_CLUSTER_A(all_reads_derep)
     
