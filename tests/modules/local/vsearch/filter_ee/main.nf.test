@@ -1,0 +1,107 @@
+nextflow_process {
+
+    name "Test Process VSEARCH_FILTER_MAX_EE"
+    script "modules/local/vsearch/filter_ee/main.nf"
+    process "VSEARCH_FILTER_MAX_EE"
+
+    test("Should filter sequences failures") {
+        def sample1 = "${projectDir}/tests/test_data/zipped/fastq/Sample1.fastq.gz"
+
+        when {
+            params {
+                // define parameters here. Example:
+                // outdir = "tests/results"
+            }
+            process {
+                """
+                input[0] = tuple(
+                    [id: "meta id"],
+                    file("$sample1")
+                )
+                // max expected error rate
+                input[1] = 0.01
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            
+            with(process.out) {
+                assert filtered_reads.size() == 1
+                (meta, reads) = filtered_reads.get(0)
+
+                assert meta == [id: "meta id"]
+                
+                assert path(reads).linesGzip.withIndex()
+                    .findAll { elem, i -> i % 4 == 0 } // every 4th line
+                    .collect { elem, i -> elem.tokenize()[0] } // extract first id from header
+                    == ['@f097dbe4-b325-4b47-bd77-dc5755c616f6', '@86279c0b-8342-44fc-ae73-046c54e67557']
+            }
+        }
+    }
+    test("Should output to log file") {
+        def sample1 = "${projectDir}/tests/test_data/zipped/fastq/Sample1.fastq.gz"
+        when {
+            process {
+                """
+                input[0] = tuple(
+                    [id: "meta id"],
+                    file("$sample1")
+                )
+                // max expected error rate
+                input[1] = 0.01
+                """
+            }
+        }
+        then {
+            with(process.out) {
+                assert logs.size() == 1
+                (meta, log) = logs.get(0)
+
+                assert path(log).readLines()
+                    .contains("2 sequences kept (of which 0 truncated), 8 sequences discarded.")
+            }
+        }
+    }
+    test("Should validate input file ending") {
+        when {
+            process {
+                """
+                input[0] = tuple([], file("${projectDir}/tests/test_data/sample.txt") )
+                input[1] = 0.01
+                """
+            }
+        }
+        then {
+            assert process.failed
+            assert errorReport.contains("input file must have '.fastq.gz' ending")
+        }
+    }
+    test("Should allow all reads through filter when max error rate = 1") {
+        def sample1 = "${projectDir}/tests/test_data/zipped/fastq/Sample1.fastq.gz"
+        when {
+            process {
+                """
+                input[0] = tuple(
+                    [id: "meta id"],
+                    file("$sample1")
+                )
+                // max expected error rate
+                input[1] = 1
+                """
+            }
+        }
+        then {
+            with(process.out) {
+                (meta, reads) = filtered_reads.get(0)
+                assert path(reads).linesGzip.size() == 4 * 10
+
+                (meta, log) = logs.get(0)
+                assert path(log).readLines()
+                    .contains("10 sequences kept (of which 0 truncated), 0 sequences discarded.")
+            }
+        }
+    }
+
+}

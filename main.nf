@@ -14,9 +14,13 @@ include { NANOPLOT_BULK } from './modules/local/nanoplot_bulk'
 include { NANOPLOT_BULK as NANOPLOT_BULK_2 } from './modules/local/nanoplot_bulk'
 include { NANOPLOT_BULK as NANOPLOT_BULK_3 } from './modules/local/nanoplot_bulk'
 include { NANOPLOT_BULK as NANOPLOT_BULK_4 } from './modules/local/nanoplot_bulk'
+include { NANOPLOT_BULK as NANOPLOT_BULK_5; NANOPLOT_BULK as NANOPLOT_BULK_6 } from './modules/local/nanoplot_bulk'
 include { NANOPLOT_SINGLE } from './modules/local/nanoplot_single'
 include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
 include { FILTLONG } from './modules/nf-core/filtlong'
+
+include { VSEARCH_FILTER_MAX_EE } from './modules/local/vsearch/filter_ee'
+include { VSEARCH_FILTER_MAX_EE as VSEARCH_FILTER_MAX_EE_2 } from './modules/local/vsearch/filter_ee'
 
 include { ITSXPRESS } from './modules/local/itsxpress'
 include { ITSX } from './modules/local/itsx'
@@ -36,7 +40,6 @@ include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
 include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
 include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_reads'
-include { FORMAT_CONSENSUS_LABELS } from './modules/local/format_consensus_labels'
 include { VSEARCH_SINTAX } from './modules/nf-core/vsearch/sintax'
 
 
@@ -90,6 +93,34 @@ workflow {
     NANOPLOT_BULK_2(
       collectWithId("filtered", filtered.reads)
     )
+
+    /*filter_maxEE = VSEARCH_FILTER_MAX_EE(
+      oriented.reads
+        .map { 
+          (meta, reads) = it
+          meta2 = meta.clone()
+          meta2['rate'] = '0.01'
+          [meta2, reads]
+        },
+      0.01)// TODO parameterize max EE
+      
+    NANOPLOT_BULK_5(
+      collectWithId("filtered-max-ee-0.01", filter_maxEE.filtered_reads)
+    )
+
+    filter_maxEE_02 = VSEARCH_FILTER_MAX_EE_2(
+      oriented.reads
+        .map { 
+          (meta, reads) = it
+          meta2 = meta.clone()
+          meta2['rate'] = '0.02'
+          [meta2, reads]
+        },
+      0.02)// TODO parameterize max EE
+    NANOPLOT_BULK_6(
+      collectWithId("filtered-max-ee-0.02", filter_maxEE_02.filtered_reads)
+    )*/
+
 
     derep = (ITSXPRESS(filtered.reads).reads 
       | RENAME_BARCODE_LABEL).reads
