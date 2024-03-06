@@ -80,14 +80,9 @@ workflow {
       collectWithId("cutadapt-oriented", oriented.reads)
     )
 
-    itsxpress = ITSXPRESS(oriented.reads)
-    NANOPLOT_BULK_5(
-      collectWithId("itsxpress", itsxpress.reads)
-    )
-
     //chopped = PORECHOP_PORECHOP(ch_reads)
     filtered = FILTLONG(
-      itsxpress.reads.map{ ch -> 
+      oriented.reads.map{ ch -> 
         (meta, reads) = ch
         shortreads = []
         [meta, shortreads, reads] 
@@ -127,7 +122,8 @@ workflow {
     )*/
 
 
-    derep = RENAME_BARCODE_LABEL(filtered.reads).reads
+    derep = (ITSXPRESS(filtered.reads).reads 
+      | RENAME_BARCODE_LABEL).reads
       | VSEARCH_DEREPLICATE //per sample
     
     // NANOPLOT_SINGLE(derep.reads)
