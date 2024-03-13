@@ -62,6 +62,7 @@ include { ClassifyTaxonomyBlast } from "./workflows/classify"
 include { PHYLOSEQ; CreatePhyloseqObject } from './modules/local/phyloseq'
 
 include { CLUSTER } from './workflows/vsearch_cluster'
+include { ExtractRegions } from './workflows/extract_regions'
 
 def collectWithId(id, ch) {
   ch.collect {
@@ -91,7 +92,9 @@ workflow {
       collectWithId("cutadapt-oriented", oriented.reads)
     )
 
-    itsxpress = ITSXPRESS(oriented.reads)
+    extracted = ExtractRegions(oriented.reads)
+
+    itsxpress = ITSXPRESS(oriented.reads, Regions.FULL_ITS)
     NANOPLOT_BULK_5(
       collectWithId("itsxpress", itsxpress.reads)
     )
@@ -104,17 +107,13 @@ workflow {
         [meta, shortreads, reads] 
       }
     )
-
-    // NANOPLOT_2(filtered.reads)
     NANOPLOT_BULK_2(
       collectWithId("filtered", filtered.reads)
     )
 
-    rename = RENAME_BARCODE_LABEL(filtered.reads).reads
-    NANOPLOT_BULK_7(
-      collectWithId("renamed", rename)
-    )
-    derep = VSEARCH_DEREPLICATE(rename) //per sample
+    derep = RENAME_BARCODE_LABEL(filtered.reads).reads
+      |  VSEARCH_DEREPLICATE //per sample
+    
     NANOPLOT_BULK_4(
       collectWithId("full-its-derep", derep.reads)
     )
@@ -132,7 +131,7 @@ workflow {
     )
 
     all_reads = FASTQ_CONCAT(collectWithId("all_reads_full_its", nonchimeras.nonchimeras)).merged_reads
-    NANOPLOT_SINGLE_2(all_reads)
+    // NANOPLOT_SINGLE_2(all_reads)
 
     all_reads_derep = VSEARCH_DEREPLICATE_2(all_reads).reads
     NANOPLOT_SINGLE_3(all_reads_derep.map {

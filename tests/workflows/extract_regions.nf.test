@@ -1,0 +1,63 @@
+nextflow_workflow {
+
+    name "Test Workflow ExtractRegions"
+    script "workflows/extract_regions.nf"
+    workflow "ExtractRegions"
+
+    test("Should extract ITS subregions") {
+
+        when {
+            workflow {
+                """
+                input[0] = Channel.of( tuple(
+                    [id: 'regions'], 
+                    file("${projectDir}/tests/test_data/region-extraction/regions.fastq")
+                ))
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+
+            with(workflow.out) {
+                assert its1.size() == 1
+
+                def (meta, its1_reads) = its1.get(0)
+                assert meta == [id: 'regions']
+                assert its1_reads ==~ ".*/regions.ITS1.fastq.gz"
+                assert path(its1_reads).linesGzip.findAll{it.startsWith("@")}.collect{it.tokenize()[0]}
+                    == ["@ITS1_LSU_chimeric", "@ITS1_ITS2_LSU"]
+            }
+
+            with(workflow.out) {
+                assert its2.size() == 1
+                def (meta, its2_reads) = its2.get(0)
+                assert meta == [id: 'regions']
+                assert its2_reads ==~ ".*/regions.ITS2.fastq.gz"
+                assert path(its2_reads).linesGzip.findAll{it.startsWith("@")}.collect{it.tokenize()[0]}
+                    == ["@ITS1_ITS2_LSU"]
+            }
+
+            with(workflow.out) {
+                assert full_its.size() == 1
+                def (meta, full_its_reads) = full_its.get(0)
+                assert meta == [id: 'regions']
+                assert full_its_reads ==~ ".*/regions.FULL_ITS.fastq.gz"
+                assert path(full_its_reads).linesGzip.findAll{it.startsWith("@")}.collect{it.tokenize()[0]}
+                    == ["@ITS1_LSU_chimeric", "@ITS1_ITS2_LSU"]
+            }
+
+
+            with(workflow.out) {
+                assert lsu.size() == 1
+                def (meta, lsu_reads) = lsu.get(0)
+                assert meta == [id: 'regions']
+                assert lsu_reads ==~ ".*/regions.LSU.fastq.gz"
+                assert path(lsu_reads).linesGzip.findAll{it.startsWith("@")}.collect{it.tokenize()[0]}
+                    == ["@ITS1_LSU_chimeric", "@ITS1_ITS2_LSU", "@LSU"]
+            }
+        }
+    }
+
+}

@@ -1,8 +1,5 @@
 process ITSX {
-    label 'process_medium'
-    // cpus 4
 
-    conda "bioconda::itsx=1.1.3"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/itsx:1.1.3--hdfd78af_1  ' :
         'biocontainers/itsx:1.1.3--hdfd78af_1' }"
@@ -13,6 +10,7 @@ process ITSX {
     output:
         tuple val(meta), path("*.ITS1.fasta.gz"), optional: true, emit: its1
         tuple val(meta), path("*.ITS2.fasta.gz"), optional: true, emit: its2
+        tuple val(meta), path("*.LSU.fasta.gz"), optional: true, emit: lsu
         tuple val(meta), path("*.full.fasta.gz"), optional: true, emit: full_its
         tuple val(meta), path("*_no_detections.fasta.gz"), optional: true, emit: no_detections
         tuple val(meta), path("*.chimeric.fasta.gz"), optional: true, emit: chimeric
@@ -24,14 +22,14 @@ process ITSX {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
     """
     ITSx \\
         -i <(gunzip -c $fasta_gz) \\
-        -t F \\
-        --save_regions ITS1 \\
+        -t Fungi \\
+        --save_regions LSU \\
         --cpu $task.cpus \\
+        --complement F \\
+        --graphical F \\
         --detailed_results T \\
         --preserve T \\
         -o ITSx_out
