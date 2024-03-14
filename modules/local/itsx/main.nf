@@ -1,4 +1,5 @@
 process ITSX {
+    tag "$meta.id"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/itsx:1.1.3--hdfd78af_1  ' :
@@ -22,6 +23,8 @@ process ITSX {
     task.ext.when == null || task.ext.when
 
     script:
+
+    def outfile_basename = "${fasta_gz.baseName}".replaceAll(/.fasta$/, '')
     """
     ITSx \\
         -i <(gunzip -c $fasta_gz) \\
@@ -32,7 +35,7 @@ process ITSX {
         --graphical F \\
         --detailed_results T \\
         --preserve T \\
-        -o ITSx_out
+        -o $outfile_basename
     
     gzip *.fasta
     """

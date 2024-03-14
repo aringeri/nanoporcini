@@ -26,15 +26,21 @@ include {
   NANOPLOT_BULK as NANOPLOT_BULK_8;
   NANOPLOT_BULK as NANOPLOT_BULK_9;
   NANOPLOT_BULK as NANOPLOT_BULK_10;
+  NANOPLOT_BULK as NANOPLOT_BULK_11;
+  NANOPLOT_BULK as NANOPLOT_BULK_12;
+  NANOPLOT_BULK as NANOPLOT_BULK_13;
+  NANOPLOT_BULK as NANOPLOT_BULK_14;
   } from './modules/local/nanoplot_bulk'
 include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
-include { FILTLONG } from './modules/nf-core/filtlong'
+include { FILTLONG; FILTLONG as FILTLONG_2 } from './modules/nf-core/filtlong'
 
 include { VSEARCH_FILTER_MAX_EE } from './modules/local/vsearch/filter_ee'
 include { VSEARCH_FILTER_MAX_EE as VSEARCH_FILTER_MAX_EE_2 } from './modules/local/vsearch/filter_ee'
 
 include { ITSXPRESS } from './modules/local/itsxpress'
 include { ITSX } from './modules/local/itsx'
+
+include { CHOPPER } from './modules/local/chopper'
 
 include { SEQKIT_FQ2FA } from './modules/local/seqkit/fq2fa'
 include { SEQKIT_FQ2FA as SEQKIT_FQ2FA_2 } from './modules/local/seqkit/fq2fa'
@@ -73,16 +79,32 @@ def collectWithId(id, ch) {
   }
 }
 
+def collectByRegionWithId(String id, ch) {
+  ch.map { meta, reads -> [ meta.subMap('region'), reads ] }
+    .groupTuple()
+    .map { meta, reads -> [ meta + [id: id], reads ] }
+}
+
+def removeFileEndings(file, String extension, String... rest) {
+  for (ext in [extension, *rest]) {
+    if (file.endsWith(ext)) {
+      return file.replaceAll("$ext\$", "")
+    }
+  }
+  return file
+}
+
 workflow {
     ch_raw_reads = Channel.fromPath(params.input, checkIfExists: true)
 
     NANOPLOT_BULK(
-      ch_raw_reads.collect().map { [ [id: "raw"], it] }
+      ch_raw_reads.collect().map { [ [id: "raw-reads_all-samples"], it] }
     )
 
     ch_reads = ch_raw_reads
       .map{ fastq -> 
-        [ [id: fastq.name.replaceAll(".fastq.gz\$", "")], fastq]
+        [ [id: removeFileEndings(fastq.name, ".fastq.gz", ".fq.gz")], fastq]
+        // [ [id: fastq.name.replaceAll(".fastq.gz\$", "")], fastq]
       }
     // must have ending '.fastq.gz'
     // NANOPLOT(ch_reads)
@@ -94,23 +116,55 @@ workflow {
 
     extracted = ExtractRegions(oriented.reads)
 
-    itsxpress = ITSXPRESS(oriented.reads, Regions.FULL_ITS)
-    NANOPLOT_BULK_5(
-      collectWithId("itsxpress", itsxpress.reads)
+    // NANOPLOT_BULK_10(
+    //   collectWithId("extracted-its1", extracted.its1)
+    // )
+    // NANOPLOT_BULK_11(
+    //   collectWithId("extracted-its2", extracted.its2)
+    // )
+    // NANOPLOT_BULK_12(
+    //   collectWithId("extracted-full_its", extracted.full_its)
+    // )
+    // NANOPLOT_BULK_13(
+    //   collectWithId("extracted-lsu", extracted.lsu)
+    // )
+
+    // itsxpress = ITSXPRESS(oriented.reads, "FULL_ITS")
+    // NANOPLOT_BULK_5(
+    //   collectWithId("itsxpress", itsxpress.reads)
+    // )
+
+    regions = extracted.its1
+      .mix(extracted.its2)
+      .mix(extracted.full_its)
+      .mix(extracted.lsu)
+
+    NANOPLOT_BULK_13(
+      collectByRegionWithId("its_extraction", regions)
+    )
+    
+    filtered_regions = CHOPPER(
+      regions.map { meta, reads -> 
+        def args = params.qualityFiltering[meta.region]
+        [meta, args, reads] 
+      }
+    )
+    NANOPLOT_BULK_14(
+      collectByRegionWithId("quality_filtering", filtered_regions.reads)
     )
 
     //chopped = PORECHOP_PORECHOP(ch_reads)
-    filtered = FILTLONG(
-      itsxpress.reads.map{ ch -> 
-        (meta, reads) = ch
-        shortreads = []
-        [meta, shortreads, reads] 
-      }
-    )
-    NANOPLOT_BULK_2(
-      collectWithId("filtered", filtered.reads)
-    )
-
+    // filtered = FILTLONG(
+    //   itsxpress.reads.map{ ch -> 
+    //     (meta, reads) = ch
+    //     shortreads = []
+    //     [meta, shortreads, reads] 
+    //   }
+    // )
+    // NANOPLOT_BULK_2(
+    //   collectWithId("filtered", filtered.reads)
+    // )
+/*
     derep = RENAME_BARCODE_LABEL(filtered.reads).reads
       |  VSEARCH_DEREPLICATE //per sample
     
@@ -176,4 +230,5 @@ workflow {
         [meta, tax, otu]
       }
     )
+    */
 }

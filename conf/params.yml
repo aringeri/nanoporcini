@@ -1,0 +1,10 @@
+qualityFiltering:
+  ITS1:
+    minQualityPhred: 20
+  ITS2:
+    minQualityPhred: 20
+  FULL_ITS:
+    minQualityPhred: 20
+    minLength: 500
+  LSU:
+    minQualityPhred: 20

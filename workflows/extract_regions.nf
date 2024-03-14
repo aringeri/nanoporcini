@@ -10,18 +10,26 @@ workflow ExtractRegions {
         reads // reads to classify in fastq format
 
     main:
-        its1 = ITSXPRESS_ITS1(reads, Regions.ITS1)
-        its2 = ITSXPRESS_ITS2(reads, Regions.ITS2)
-        full_its = ITSXPRESS_FULL(reads, Regions.FULL_ITS)
+        its1 = ITSXPRESS_ITS1(reads, "ITS1")
+        its2 = ITSXPRESS_ITS2(reads, "ITS2")
+        full_its = ITSXPRESS_FULL(reads, "FULL_ITS")
         itsx = SEQKIT_FQ2FA(reads) | ITSX
         
         lsu_mapped = RecoverRegionsFromFastq(reads.join(itsx.positions))
     
     emit:
-        its1 = its1.reads
-        its2 = its2.reads
-        full_its = full_its.reads
-        lsu = lsu_mapped.lsu
+        its1 = its1.reads.map(addRegionToMetadata("ITS1"))
+        its2 = its2.reads.map(addRegionToMetadata("ITS2"))
+        full_its = full_its.reads.map(addRegionToMetadata("FULL_ITS"))
+        lsu = lsu_mapped.lsu.map(addRegionToMetadata("LSU"))
+}
+
+def addRegionToMetadata(regionId) {
+    addToMetadata([region: "$regionId"])
+}
+
+def addToMetadata(toAdd) {
+    { meta, reads -> [meta + toAdd, reads] }
 }
 
 process RecoverRegionsFromFastq {
@@ -34,10 +42,11 @@ process RecoverRegionsFromFastq {
         tuple val(meta), path("*LSU.fastq.gz"), emit: lsu
 
     script:
+    def outfile = "${fastq.baseName}".replaceAll(/.fastq/, '')
     """
     extract_region_by_pos.py --fastq $fastq \\
         --positions $positions \\
-        -o ${fastq.baseName}.LSU.fastq.gz
+        -o ${outfile}.LSU.fastq.gz
     """
 
 }

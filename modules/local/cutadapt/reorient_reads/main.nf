@@ -1,4 +1,5 @@
 process CUTADAPT_REORIENT_READS {
+    tag "$meta.id"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/cutadapt:4.6--py39hf95cd2a_1' :
