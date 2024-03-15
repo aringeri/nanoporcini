@@ -71,11 +71,10 @@ include { CLUSTER } from './workflows/vsearch_cluster'
 include { ExtractRegions } from './workflows/extract_regions'
 
 def collectWithId(id, ch) {
-  ch.collect {
-    (meta, read) = it
+  ch.collect { meta, read -> 
     read
   }.map {
-    [ [id: id], it]
+    [ [id: id], it ]
   }
 }
 
@@ -98,41 +97,20 @@ workflow {
     ch_raw_reads = Channel.fromPath(params.input, checkIfExists: true)
 
     NANOPLOT_BULK(
-      ch_raw_reads.collect().map { [ [id: "raw-reads_all-samples"], it] }
+      ch_raw_reads.collect().map { [ [id: "raw_reads_all_samples"], it] }
     )
 
     ch_reads = ch_raw_reads
       .map{ fastq -> 
         [ [id: removeFileEndings(fastq.name, ".fastq.gz", ".fq.gz")], fastq]
-        // [ [id: fastq.name.replaceAll(".fastq.gz\$", "")], fastq]
       }
-    // must have ending '.fastq.gz'
-    // NANOPLOT(ch_reads)
 
     oriented = CUTADAPT_REORIENT_READS(ch_reads)
     NANOPLOT_BULK_3(
-      collectWithId("cutadapt-oriented", oriented.reads)
+      collectWithId("post_primer_trimming", oriented.reads)
     )
 
     extracted = ExtractRegions(oriented.reads)
-
-    // NANOPLOT_BULK_10(
-    //   collectWithId("extracted-its1", extracted.its1)
-    // )
-    // NANOPLOT_BULK_11(
-    //   collectWithId("extracted-its2", extracted.its2)
-    // )
-    // NANOPLOT_BULK_12(
-    //   collectWithId("extracted-full_its", extracted.full_its)
-    // )
-    // NANOPLOT_BULK_13(
-    //   collectWithId("extracted-lsu", extracted.lsu)
-    // )
-
-    // itsxpress = ITSXPRESS(oriented.reads, "FULL_ITS")
-    // NANOPLOT_BULK_5(
-    //   collectWithId("itsxpress", itsxpress.reads)
-    // )
 
     regions = extracted.its1
       .mix(extracted.its2)
@@ -140,7 +118,7 @@ workflow {
       .mix(extracted.lsu)
 
     NANOPLOT_BULK_13(
-      collectByRegionWithId("its_extraction", regions)
+      collectByRegionWithId("post_its_extraction", regions)
     )
     
     filtered_regions = CHOPPER(
@@ -150,26 +128,14 @@ workflow {
       }
     )
     NANOPLOT_BULK_14(
-      collectByRegionWithId("quality_filtering", filtered_regions.reads)
+      collectByRegionWithId("post_quality_filtering", filtered_regions.reads)
     )
 
-    //chopped = PORECHOP_PORECHOP(ch_reads)
-    // filtered = FILTLONG(
-    //   itsxpress.reads.map{ ch -> 
-    //     (meta, reads) = ch
-    //     shortreads = []
-    //     [meta, shortreads, reads] 
-    //   }
-    // )
-    // NANOPLOT_BULK_2(
-    //   collectWithId("filtered", filtered.reads)
-    // )
-/*
-    derep = RENAME_BARCODE_LABEL(filtered.reads).reads
+    derep = RENAME_BARCODE_LABEL(filtered_regions.reads).reads
       |  VSEARCH_DEREPLICATE //per sample
     
     NANOPLOT_BULK_4(
-      collectWithId("full-its-derep", derep.reads)
+      collectByRegionWithId("post_derep_per_sample", derep.reads)
     )
 
     uchime_denovo = VSEARCH_UCHIME_DENOVO(derep.reads)
@@ -181,41 +147,43 @@ workflow {
       derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
     )
     NANOPLOT_BULK_9(
-      collectWithId("non-chimeric", nonchimeras.nonchimeras)
+      collectByRegionWithId("post_chimera_filtering", nonchimeras.nonchimeras)
     )
 
-    all_reads = FASTQ_CONCAT(collectWithId("all_reads_full_its", nonchimeras.nonchimeras)).merged_reads
-    // NANOPLOT_SINGLE_2(all_reads)
+    pooled_reads = FASTQ_CONCAT(collectByRegionWithId("pooled_reads", nonchimeras.nonchimeras)).merged_reads
+    NANOPLOT_SINGLE_2(pooled_reads)
 
-    all_reads_derep = VSEARCH_DEREPLICATE_2(all_reads).reads
-    NANOPLOT_SINGLE_3(all_reads_derep.map {
-      (meta, reads) = it
-      [[id: 'all_reads_full_its_derep'], reads]
+    pooled_reads_derep = VSEARCH_DEREPLICATE_2(pooled_reads).reads
+    NANOPLOT_SINGLE_3(pooled_reads_derep.map { meta, reads -> 
+      [meta + [id: 'post_derep_pooled_reads'], reads]
     })
 
+    cluster_out = VSEARCH_CLUSTER_A(pooled_reads_derep)
     
-    cluster_out = VSEARCH_CLUSTER_A(all_reads_derep)
+    pooled_reads_fa = SEQKIT_FQ2FA_2(pooled_reads).fasta
     
-    all_reads_fa = SEQKIT_FQ2FA_2(all_reads).fasta
-    otus = VSEARCH_MAP_READS_TO_OTUS(all_reads_fa, cluster_out.centroids)
+    merged_channels = pooled_reads_fa
+      .map { meta, reads -> [ meta.subMap(['region', 'id']), reads ] }
+      .join( 
+        cluster_out.centroids.map{ meta, reads -> [ meta.subMap(['region', 'id']), reads ] }
+      )
+    otus = VSEARCH_MAP_READS_TO_OTUS(merged_channels)
 
+    // TODO filter out LSU for taxonomic assignment for now
+    centroids = cluster_out.centroids.filter { meta, read -> meta.region != "LSU" }
     if (params.classifier == "blast") {
       uniteDB = PrepUniteDBForQiime(params.unite_db)
 
       cResults = ClassifyTaxonomyBlast(
-        cluster_out.centroids,
+        centroids,
         uniteDB.blastDB,
         uniteDB.taxonomy
       )
 
-      tax_rds = LoadTaxTableIntoPhyloseq(cResults.classifications.map{it[1]})
+      tax_rds = LoadTaxTableIntoPhyloseq(cResults.classifications)
     } else if (params.classifier == "sintax") {
-      tax_rds = VSEARCH_SINTAX(cluster_out.centroids, params.sintax_db)
+      tax_rds = VSEARCH_SINTAX(centroids, params.sintax_db)
         .tsv
-        .map { 
-          (meta, tsv) = it
-          tsv
-        }
         | ImportSintaxTaxonomyIntoPhyloseq
 
     } else {
@@ -223,12 +191,6 @@ workflow {
     }
 
     CreatePhyloseqObject(
-      // careful with merge when using channels with multiple values.
-      otus.otu_tab.merge(tax_rds).map {
-        (meta, otu, tax) = it
-        // re-order parameters
-        [meta, tax, otu]
-      }
+      otus.otu_tab.join(tax_rds).map { meta, otu, tax ->  [meta, tax, otu] } // re-order parameters
     )
-    */
 }

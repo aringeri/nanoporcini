@@ -1,13 +1,13 @@
 process ImportQiime2TaxonomyIntoPhyloseq {
-    tag "$prefix"
+    tag "$meta.id - $meta.region"
 
     container 'ghcr.io/aringeri/phyloseq-speedytax'
 
     input:
-        path(tax_tsv)
+        tuple val(meta), path(tax_tsv)
 
     output:
-         path("*.rds"), emit: tax_rds
+        tuple val(meta), path("*.rds"), emit: tax_rds
 
     script:
     if (!"$tax_tsv".endsWith(".tsv")) {
@@ -25,13 +25,14 @@ process ImportQiime2TaxonomyIntoPhyloseq {
 }
 
 process TweakTaxTableForSpeedytax {
+    tag "$meta.id - $meta.region"
     container "docker.io/biocontainers/biocontainers:v1.2.0_cv1"
 
     input:
-        path(tax_tsv)
+        tuple val(meta), path(tax_tsv)
 
     output:
-        path("output/*.tsv")
+        tuple val(meta), path("output/*.tsv")
     
     script:
     if (!"$tax_tsv".endsWith(".tsv")) {
@@ -39,6 +40,7 @@ process TweakTaxTableForSpeedytax {
     }
 
     """
+    rm -r output/ || true
     mkdir output/
 
     # Rename 'Consensus' header to 'Confidence'

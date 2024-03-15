@@ -3,7 +3,7 @@ include {
     ITSXPRESS as ITSXPRESS_ITS2;
     ITSXPRESS as ITSXPRESS_FULL } from '../modules/local/itsxpress'
 include { SEQKIT_FQ2FA } from '../modules/local/seqkit/fq2fa'
-include { ITSX } from '../modules/local/itsx'
+include { ITSX as ITSX_LSU } from '../modules/local/itsx'
 
 workflow ExtractRegions {
     take:
@@ -13,7 +13,7 @@ workflow ExtractRegions {
         its1 = ITSXPRESS_ITS1(reads, "ITS1")
         its2 = ITSXPRESS_ITS2(reads, "ITS2")
         full_its = ITSXPRESS_FULL(reads, "FULL_ITS")
-        itsx = SEQKIT_FQ2FA(reads) | ITSX
+        itsx = SEQKIT_FQ2FA(reads) | ITSX_LSU
         
         lsu_mapped = RecoverRegionsFromFastq(reads.join(itsx.positions))
     
@@ -33,6 +33,7 @@ def addToMetadata(toAdd) {
 }
 
 process RecoverRegionsFromFastq {
+    tag "$meta.id - LSU"
     container "biocontainers/biopython:1.81"
 
     input:

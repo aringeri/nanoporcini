@@ -1,5 +1,5 @@
 process CHOPPER {
-    tag "$meta.id $meta.region"
+    tag "$meta.id - $meta.region"
 
     container "biocontainers/chopper:0.7.0--hdcf5f25_0"
 
@@ -16,7 +16,6 @@ process CHOPPER {
     if ("${prefix}.filtered.fastq.gz" == "$fastq") {
         error "input file matches output file which would causing overwrite: $fastq"
     }
-    println(args)
 
     """
     echo "running chopper with args: $args" > ${prefix}.log

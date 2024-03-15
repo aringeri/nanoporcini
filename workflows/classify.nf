@@ -1,6 +1,8 @@
 include { ImportFastaIntoQiime } from "./qiime/import" 
 
 process UnGzip {
+    tag "$meta.id - $meta.region"
+    
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://containers.biocontainers.pro/s3/SingImgsRepo/biocontainers/v1.2.0_cv1/biocontainers_v1.2.0_cv1.img' :
         'docker.io/biocontainers/biocontainers:v1.2.0_cv1' }"
@@ -23,6 +25,7 @@ process UnGzip {
 }
 
 process ImportFastaQiime {
+    tag "$meta.id - $meta.region"
 
     container "qiime2/amplicon:2023.9"
 
@@ -44,7 +47,8 @@ process ImportFastaQiime {
 }
 
 process ClassifyConsensusBlast {
-    cpus 4
+    tag "$meta.id - $meta.region"
+
     container "qiime2/amplicon:2023.9"
 
     input:
@@ -73,6 +77,7 @@ process ClassifyConsensusBlast {
 }
 
 process ExportQiimeData {
+    tag "$meta.id - $meta.region"
     container "qiime2/amplicon:2023.9"
 
     input:

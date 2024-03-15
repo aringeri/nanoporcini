@@ -2,10 +2,10 @@ process ImportSintaxTaxonomyIntoPhyloseq {
     container 'ghcr.io/aringeri/phyloseq-speedytax'
 
     input:
-        path(tax_tsv)
+        tuple val(meta), path(tax_tsv)
 
     output:
-         path("*.rds"), emit: tax_rds
+        tuple val(meta), path("*.rds"), emit: tax_rds
 
     script:
     if (!"$tax_tsv".endsWith(".tsv")) {

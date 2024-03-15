@@ -1,34 +1,28 @@
 process VSEARCH_CLUSTER_A {
-    tag "$meta.id"
-    label 'process_low'
+    tag "$meta.id - $meta.region"
 
-    conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/mulled-v2-53dae514294fca7b44842b784ed85a5303ac2d80:7b3365d778c690ca79bc85aaaeb86bb39a2dec69-0':
         'biocontainers/mulled-v2-53dae514294fca7b44842b784ed85a5303ac2d80:7b3365d778c690ca79bc85aaaeb86bb39a2dec69-0' }"
 
     input:
-    tuple val(meta), path(fasta)
+        tuple val(meta), path(fasta)
 
     output:
-    tuple val(meta), path('*.aln.gz')                , optional: true, emit: aln
-    tuple val(meta), path('*.biom.gz')               , optional: true, emit: biom
-    tuple val(meta), path('*.mothur.tsv.gz')         , optional: true, emit: mothur
-    tuple val(meta), path('*.otu.tsv.gz')            , optional: true, emit: otu
-    // tuple val(meta), path('*.bam')                   , optional: true, emit: bam
-    tuple val(meta), path('*.out.tsv.gz')            , optional: true, emit: out
-    tuple val(meta), path('*.blast.tsv.gz')          , optional: true, emit: blast
-    tuple val(meta), path('*.uc.tsv.gz')             , optional: true, emit: uc
-    tuple val(meta), path('*.centroids.fasta.gz')    , optional: true, emit: centroids
-    tuple val(meta), path('*.consensus.fasta.gz')    , optional: true, emit: consensus
-    tuple val(meta), path('*.clusters.fasta*.gz')    , optional: true, emit: clusters
-    tuple val(meta), path('*.profile.txt.gz')        , optional: true, emit: profile
-    tuple val(meta), path('*.msa.fasta.gz')          , optional: true, emit: msa
-    tuple val(meta), path('*.log')          , optional: true, emit: log
-    path "versions.yml"                              , emit: versions
+        tuple val(meta), path('*.aln.gz')                , optional: true, emit: aln
+        tuple val(meta), path('*.biom.gz')               , optional: true, emit: biom
+        tuple val(meta), path('*.mothur.tsv.gz')         , optional: true, emit: mothur
+        tuple val(meta), path('*.otu.tsv.gz')            , optional: true, emit: otu
+        tuple val(meta), path('*.out.tsv.gz')            , optional: true, emit: out
+        tuple val(meta), path('*.blast.tsv.gz')          , optional: true, emit: blast
+        tuple val(meta), path('*.uc.tsv.gz')             , optional: true, emit: uc
+        tuple val(meta), path('*.centroids.fasta.gz')    , optional: true, emit: centroids
+        tuple val(meta), path('*.consensus.fasta.gz')    , optional: true, emit: consensus
+        tuple val(meta), path('*.clusters.fasta*.gz')    , optional: true, emit: clusters
+        tuple val(meta), path('*.profile.txt.gz')        , optional: true, emit: profile
+        tuple val(meta), path('*.msa.fasta.gz')          , optional: true, emit: msa
+        tuple val(meta), path('*.log')                   , optional: true, emit: log
 
-    when:
-    task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
@@ -70,10 +64,5 @@ process VSEARCH_CLUSTER_A {
 
 
     gzip -n ${prefix}.*
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        vsearch: \$(vsearch --version 2>&1 | head -n 1 | sed 's/vsearch //g' | sed 's/,.*//g' | sed 's/^v//' | sed 's/_.*//')
-    END_VERSIONS
     """
 }

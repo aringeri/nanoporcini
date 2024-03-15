@@ -1,14 +1,15 @@
 process FASTQ_CONCAT {
+    tag "$meta.id - $meta.region"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://containers.biocontainers.pro/s3/SingImgsRepo/biocontainers/v1.2.0_cv1/biocontainers_v1.2.0_cv1.img' :
         'docker.io/biocontainers/biocontainers:v1.2.0_cv1' }"
 
     input:
-    tuple val(meta), path(zipped_reads, name: "zipped*.gz", stageAs: "dir*/*")
+        tuple val(meta), path(zipped_reads, name: "zipped*.gz", stageAs: "dir*/*")
     
     output:
-    tuple val(meta), path( "*.gz" ), emit: merged_reads
+        tuple val(meta), path( "*.gz" ), emit: merged_reads
 
     script:
 

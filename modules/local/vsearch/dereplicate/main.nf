@@ -1,26 +1,21 @@
 process VSEARCH_DEREPLICATE {
-    tag "${meta.id}"
+    tag "$meta.id - $meta.region"
     label 'process_low'
 
-    // conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/vsearch:2.21.1--h95f258a_0':
         'biocontainers/vsearch:2.21.1--h95f258a_0' }"
 
     input:
-    tuple val(meta), path(fastx)
+        tuple val(meta), path(fastx)
  
     output:
-    tuple val(meta), path("*.fast*.gz"), emit: reads
-    tuple val(meta), path("*.uc"), emit: uc
-    tuple val(meta), path("*.log"), emit: logs
-    path "versions.yml", emit: versions
-
-    when:
-    task.ext.when == null || task.ext.when
+        tuple val(meta), path("*.fast*.gz"), emit: reads
+        tuple val(meta), path("*.uc"), emit: uc
+        tuple val(meta), path("*.log"), emit: logs
 
     script:
-    // def args = task.ext.args ?: ''
+
     def prefix = task.ext.prefix ?: "${meta.id}"
 
     if ("$fastx".endsWith(".fastq.gz")) {
@@ -46,10 +41,5 @@ process VSEARCH_DEREPLICATE {
         --threads $task.cpus
     
     gzip $outfile
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        vsearch: \$(vsearch --version 2>&1 | head -n 1 | sed 's/vsearch //g' | sed 's/,.*//g' | sed 's/^v//' | sed 's/_.*//')
-    END_VERSIONS
     """
 }

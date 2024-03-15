@@ -48,6 +48,7 @@ process PHYLOSEQ {
 }
 
 process CreatePhyloseqObject {
+    tag "$meta.id - $meta.region - $params.classifier"
     
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
          'https://depot.galaxyproject.org/singularity/bioconductor-phyloseq:1.44.0--r43hdfd78af_0' :
