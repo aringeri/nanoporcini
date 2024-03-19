@@ -1,7 +1,9 @@
 process CHOPPER {
     tag "$meta.id - $meta.region"
 
-    container "biocontainers/chopper:0.7.0--hdcf5f25_0"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/chopper:0.7.0--hdcf5f25_0' :
+        'biocontainers/chopper:0.7.0--hdcf5f25_0' }"
 
     input:
         tuple val(meta), val(args), path(fastq)
