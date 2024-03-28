@@ -53,11 +53,13 @@ process ConvertRDPResultToTaxTable {
 
 process ClassifyReadsRDP {
     tag "$meta.id - $meta.region"
-    container "biocontainers/rdp_classifier:2.14--hdfd78af_0"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/rdp_classifier:2.14--hdfd78af_0' :
+        'biocontainers/rdp_classifier:2.14--hdfd78af_0' }"
 
     input:
         tuple val(meta), path(reads)
-        path(model_dir) // RDP properties file
+        path(model_dir) // directory containing output of RDP training
     output:
         tuple val(meta), path("*.tsv"), emit: classifications
 
@@ -118,9 +120,6 @@ workflow ClassifyRDP {
             | ConvertRDPResultToTaxTable
             | ImportTaxonomyIntoPhyloseq
 
-        // export = ExportQiimeData(classifyResults.classifications)
-        // ExportQiimeData(classifyResults.searchResults)
-    
     emit:
          tax_rds = tax_rds
 }
