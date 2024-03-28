@@ -6,8 +6,7 @@ process VSEARCH_UCHIME_REF {
         'biocontainers/mulled-v2-53dae514294fca7b44842b784ed85a5303ac2d80:7b3365d778c690ca79bc85aaaeb86bb39a2dec69-0' }"
 
     input:
-        tuple val(meta), path(fasta)
-        path(db)
+        tuple val(meta), path(fasta), path(db)
 
     output:
         tuple val(meta), path('*.nonchimeras.fasta'), emit: nonchimeras

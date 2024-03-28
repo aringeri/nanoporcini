@@ -5,6 +5,8 @@ params.input = "$baseDir/data/sub100/*.fastq.gz"
 // params.unite_db = "$baseDir/data/db/utax_reference_dataset_all_25.07.2023.fasta.gz"
 params.unite_db = "$baseDir/data/db/UNITE-full-all-10.15156-BIO-2938070-20230725/sh_general_release_dynamic_s_all_25.07.2023.fasta"
 params.sintax_db = "$baseDir/data/db/unite-sintax.fasta"
+params.rdp_lsu_db = "$baseDir/data/db/RDP-LSU/RDP-LSU-training-11-dada2/RDP_LSU_fixed_train_set_v2.fa"
+params.rdp_lsu_trained_model_dir = "$baseDir/data/db/RDP-LSU/RDPClassifier_fungiLSU_trainsetNo11_trained/"
 params.outdir = 'output'
 params.classifier = 'blast'
 
@@ -64,6 +66,7 @@ include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
 include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
 include { ImportSintaxTaxonomyIntoPhyloseq } from './workflows/phyloseq/import/sintax'
 include { ClassifyTaxonomyBlast } from "./workflows/classify"
+include { ClassifyRDP } from "./workflows/ClassifyRDP"
 
 include { PHYLOSEQ; CreatePhyloseqObject } from './modules/local/phyloseq'
 
@@ -139,9 +142,14 @@ workflow {
     )
 
     uchime_denovo = VSEARCH_UCHIME_DENOVO(derep.reads)
-    uchime_ref = VSEARCH_UCHIME_REF(
-      SEQKIT_FQ2FA(derep.reads).fasta, 
-      params.unite_db)
+    fa_for_uchime = SEQKIT_FQ2FA(derep.reads).fasta
+
+    uchime_fa_with_db = fa_for_uchime.map { meta, fa -> 
+      db = (meta.region == "LSU") ? params.rdp_lsu_db : params.unite_db
+      tuple(meta, fa, db)
+    }
+
+    uchime_ref = VSEARCH_UCHIME_REF(uchime_fa_with_db)
 
     nonchimeras = SEQKIT_REMOVE_CHIMERAS(
       derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
@@ -169,26 +177,33 @@ workflow {
       )
     otus = VSEARCH_MAP_READS_TO_OTUS(merged_channels)
 
-    // TODO filter out LSU for taxonomic assignment for now
-    centroids = cluster_out.centroids.filter { meta, read -> meta.region != "LSU" }
+    centroids = cluster_out.centroids.branch {
+      lsu: it[0].region == "LSU"
+      its: true
+    }
+
+    tax_rds_lsu = ClassifyRDP(centroids.lsu, params.rdp_lsu_trained_model_dir).tax_rds
+
     if (params.classifier == "blast") {
       uniteDB = PrepUniteDBForQiime(params.unite_db)
 
       cResults = ClassifyTaxonomyBlast(
-        centroids,
+        centroids.its,
         uniteDB.blastDB,
         uniteDB.taxonomy
       )
 
-      tax_rds = LoadTaxTableIntoPhyloseq(cResults.classifications)
+      tax_rds_its = LoadTaxTableIntoPhyloseq(cResults.classifications)
     } else if (params.classifier == "sintax") {
-      tax_rds = VSEARCH_SINTAX(centroids, params.sintax_db)
+      tax_rds_its = VSEARCH_SINTAX(centroids.its, params.sintax_db)
         .tsv
         | ImportSintaxTaxonomyIntoPhyloseq
 
     } else {
       error "input param 'classifier' not defined or not supported: ${params.classifier}"
     }
+
+    tax_rds = tax_rds_its.mix(tax_rds_lsu)
 
     CreatePhyloseqObject(
       otus.otu_tab.join(tax_rds).map { meta, otu, tax ->  [meta, tax, otu] } // re-order parameters
