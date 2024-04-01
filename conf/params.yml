@@ -8,3 +8,7 @@ qualityFiltering:
     minLength: 500
   LSU:
     minQualityPhred: 20
+region:
+  LSU:
+    classifier: "dada2"
+    rdp_trained_model_dir: "$baseDir/data/db/RDP-LSU/RDPClassifier_fungiLSU_trainsetNo11_trained/"

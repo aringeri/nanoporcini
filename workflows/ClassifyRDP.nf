@@ -77,6 +77,46 @@ process ClassifyReadsRDP {
     """
 }
 
+process ClassifyReadsDada2 {
+    tag "$meta.id - $meta.region"
+    cpus 2
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/bioconductor-dada2:1.30.0--r43hf17093f_0' :
+        'biocontainers/bioconductor-dada2:1.30.0--r43hf17093f_0' }"
+
+    input:
+        tuple val(meta), path(reads)
+        path(model_dir) // directory containing output of RDP training
+    output:
+        tuple val(meta), path("*.tsv"), emit: tax_tsv
+
+    script:
+
+    if (!"$reads".endsWith(".fasta")) {
+        error "Expecting input to be a fasta file: $reads"
+    }
+    def prefix  = reads.baseName
+    """
+    #!/usr/bin/env Rscript
+    library(dada2)
+
+    seqs <- getSequences("$reads")
+
+    taxa = assignTaxonomy(
+        seqs,
+        "$model_dir",
+        multithread = $task.cpus
+    )
+
+    rows <- names(rownames(taxa))
+    ids <- lapply(rows, FUN = function(x) unlist(strsplit(x, "\\\\s"))[1])
+    rownames(taxa) = ids
+
+    write.table(taxa, file="prefix.tsv", sep="\\t", row.names=TRUE)
+    """
+
+}
+
 process ImportTaxonomyIntoPhyloseq {
     tag "$meta.id - $meta.region"
 
@@ -116,9 +156,18 @@ workflow ClassifyRDP {
     main:
         plain_reads = UnGzip(reads)
 
-        tax_rds = ClassifyReadsRDP(plain_reads, trained_rdp_model_dir)
-            | ConvertRDPResultToTaxTable
-            | ImportTaxonomyIntoPhyloseq
+        if (params.region.LSU.classifier == 'rdp') {
+            tax_rds = ClassifyReadsRDP(plain_reads, trained_rdp_model_dir)
+                | ConvertRDPResultToTaxTable
+                | ImportTaxonomyIntoPhyloseq
+        } else if (params.region.LSU.classifier == 'dada2') {
+            tax_rds = ClassifyReadsDada2(
+                plain_reads, 
+                "$baseDir/data/db/RDP-LSU/rdp_train.LSU.dada2.fasta.gz")
+                | ImportTaxonomyIntoPhyloseq
+        } else {
+            error "LSU classifier parameter not recognized: ${params.region.LSU.classifier}"
+        }
 
     emit:
          tax_rds = tax_rds

@@ -182,7 +182,7 @@ workflow {
       its: true
     }
 
-    tax_rds_lsu = ClassifyRDP(centroids.lsu, params.rdp_lsu_trained_model_dir).tax_rds
+    tax_rds_lsu = ClassifyRDP(centroids.lsu, params.region.LSU.rdp_trained_model_dir).tax_rds
 
     if (params.classifier == "blast") {
       uniteDB = PrepUniteDBForQiime(params.unite_db)
