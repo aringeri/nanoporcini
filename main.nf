@@ -10,29 +10,12 @@ params.rdp_lsu_trained_model_dir = "$baseDir/data/db/RDP-LSU/RDPClassifier_fungi
 params.outdir = 'output'
 params.classifier = 'blast'
 
-include { NANOPLOT } from './modules/nf-core/nanoplot'
 include { NANOPLOT as NANOPLOT_2 } from './modules/nf-core/nanoplot'
 include { 
   NANOPLOT_SINGLE;
   NANOPLOT_SINGLE as NANOPLOT_SINGLE_2;
   NANOPLOT_SINGLE as NANOPLOT_SINGLE_3 
   } from './modules/local/nanoplot_single'
-include { 
-  NANOPLOT_BULK
-  NANOPLOT_BULK as NANOPLOT_BULK_2;
-  NANOPLOT_BULK as NANOPLOT_BULK_3;
-  NANOPLOT_BULK as NANOPLOT_BULK_4;
-  NANOPLOT_BULK as NANOPLOT_BULK_5; 
-  NANOPLOT_BULK as NANOPLOT_BULK_6;
-  NANOPLOT_BULK as NANOPLOT_BULK_7;
-  NANOPLOT_BULK as NANOPLOT_BULK_8;
-  NANOPLOT_BULK as NANOPLOT_BULK_9;
-  NANOPLOT_BULK as NANOPLOT_BULK_10;
-  NANOPLOT_BULK as NANOPLOT_BULK_11;
-  NANOPLOT_BULK as NANOPLOT_BULK_12;
-  NANOPLOT_BULK as NANOPLOT_BULK_13;
-  NANOPLOT_BULK as NANOPLOT_BULK_14;
-  } from './modules/local/nanoplot_bulk'
 include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
 include { FILTLONG; FILTLONG as FILTLONG_2 } from './modules/nf-core/filtlong'
 
@@ -72,6 +55,13 @@ include { PHYLOSEQ; CreatePhyloseqObject } from './modules/local/phyloseq'
 
 include { CLUSTER } from './workflows/vsearch_cluster'
 include { ExtractRegions } from './workflows/extract_regions'
+include { 
+  qualityControl; 
+  qualityControl as qualityControl_postPrimer;
+  qualityControl as qualityControl_itsx;
+  qualityControl as qualityControl_q_filter;
+  qualityControl as qualityControl_chimera
+  } from './workflows/qualityControl'
 
 def collectWithId(id, ch) {
   ch.collect { meta, read -> 
@@ -99,19 +89,16 @@ def removeFileEndings(file, String extension, String... rest) {
 workflow {
     ch_raw_reads = Channel.fromPath(params.input, checkIfExists: true)
 
-    NANOPLOT_BULK(
-      ch_raw_reads.collect().map { [ [id: "raw_reads_all_samples"], it] }
-    )
-
     ch_reads = ch_raw_reads
       .map{ fastq -> 
         [ [id: removeFileEndings(fastq.name, ".fastq.gz", ".fq.gz")], fastq]
       }
+    
+    qualityControl('raw_reads_all_samples', ch_reads)
 
     oriented = CUTADAPT_REORIENT_READS(ch_reads)
-    NANOPLOT_BULK_3(
-      collectWithId("post_primer_trimming", oriented.reads)
-    )
+
+    qualityControl_postPrimer('post_primer_trimming', oriented.reads)
 
     extracted = ExtractRegions(oriented.reads)
 
@@ -120,9 +107,7 @@ workflow {
       .mix(extracted.full_its)
       .mix(extracted.lsu)
 
-    NANOPLOT_BULK_13(
-      collectByRegionWithId("post_its_extraction", regions)
-    )
+    qualityControl_itsx('post_its_extraction', regions)
     
     filtered_regions = CHOPPER(
       regions.map { meta, reads -> 
@@ -130,16 +115,10 @@ workflow {
         [meta, args, reads] 
       }
     )
-    NANOPLOT_BULK_14(
-      collectByRegionWithId("post_quality_filtering", filtered_regions.reads)
-    )
+    qualityControl_q_filter('post_quality_filtering', filtered_regions.reads)
 
     derep = RENAME_BARCODE_LABEL(filtered_regions.reads).reads
       |  VSEARCH_DEREPLICATE //per sample
-    
-    NANOPLOT_BULK_4(
-      collectByRegionWithId("post_derep_per_sample", derep.reads)
-    )
 
     uchime_denovo = VSEARCH_UCHIME_DENOVO(derep.reads)
     fa_for_uchime = SEQKIT_FQ2FA(derep.reads).fasta
@@ -154,9 +133,7 @@ workflow {
     nonchimeras = SEQKIT_REMOVE_CHIMERAS(
       derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
     )
-    NANOPLOT_BULK_9(
-      collectByRegionWithId("post_chimera_filtering", nonchimeras.nonchimeras)
-    )
+    qualityControl_chimera('post_chimera_filtering', nonchimeras.nonchimeras)
 
     pooled_reads = FASTQ_CONCAT(collectByRegionWithId("pooled_reads", nonchimeras.nonchimeras)).merged_reads
     NANOPLOT_SINGLE_2(pooled_reads)

@@ -8,8 +8,8 @@ setwd('/Users/alex/repos/long-read-ITS-metabarcoding')
 its1 <- readRDS("output/full-multi-region/phyloseq/ITS1/pooled_reads/blast/pooled_reads.phyloseq.rds")
 its2 <- readRDS("output/full-multi-region/phyloseq/ITS2/pooled_reads/blast/pooled_reads.phyloseq.rds")
 full_its <- readRDS("output/full-multi-region/phyloseq/FULL_ITS/pooled_reads/blast/pooled_reads.phyloseq.rds")
-lsu <- readRDS("output/full-multi-region/phyloseq/LSU/pooled_reads/blast/pooled_reads.phyloseq.rds")
-#lsu <- readRDS("output/sub100-lsu/)
+#lsu <- readRDS("output/full-multi-region/phyloseq/LSU/pooled_reads/blast/pooled_reads.phyloseq.rds")
+lsu <- readRDS("output/full-multi-region-dada2/phyloseq/LSU/pooled_reads/blast/pooled_reads.phyloseq.rds")
 full_its_old <- readRDS("output/full-itsx-trim-server/phyloseq/all_reads_full_its.phyloseq.rds")
 
 filter_at_least <- function(phylo, n) {
@@ -43,7 +43,7 @@ plot_grid(
 its1_fungi <- subset_taxa(its1, Domain %in% c("k_Fungi"))
 its2_fungi <- subset_taxa(its2, Domain %in% c("k_Fungi"))
 full_its_fungi <- subset_taxa(full_its, Domain %in% c("k_Fungi"))
-lsu_fungi <- subset_taxa(lsu, Domain %in% c("Fungi"))
+lsu_fungi <- subset_taxa(lsu, Kingdom %in% c("Fungi"))
 full_its_old_fungi <- subset_taxa(full_its_old, Domain %in% c("k_Fungi"))
 
 plot_grid(
