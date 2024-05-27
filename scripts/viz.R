@@ -5,7 +5,17 @@ library(cowplot)
 setwd('/Users/alex/repos/long-read-ITS-metabarcoding')
 
 #phylo <- readRDS("output/full/phyloseq/all_reads_full_its.phyloseq.rds")
-its1 <- readRDS("output/full-multi-region/phyloseq/ITS1/pooled_reads/blast/pooled_reads.phyloseq.rds")
+its1 <- tax_table(readRDS("output/full-multi-region/phyloseq/ITS1/pooled_reads/blast/pooled_reads.phyloseq.rds"))
+# its1_tax_table <- import_tax_tsv('output/full-multi-region/qiime-export/ITS1/pooled_reads/output/taxonomy.tsv')
+# its1_tax_table %>%
+#   dplyr::filter(!is.na(Species)) %>%
+#   dplyr::mutate(Species = paste0('s_', Species)) %>%
+#   merge(its1, by=0, all=TRUE) %>%
+#   dplyr::filter(Species.x != Species.y) %>%
+#   tibble::column_to_rownames('Row.names') %>%
+#   View()
+
+
 its2 <- readRDS("output/full-multi-region/phyloseq/ITS2/pooled_reads/blast/pooled_reads.phyloseq.rds")
 full_its <- readRDS("output/full-multi-region/phyloseq/FULL_ITS/pooled_reads/blast/pooled_reads.phyloseq.rds")
 #lsu <- readRDS("output/full-multi-region/phyloseq/LSU/pooled_reads/blast/pooled_reads.phyloseq.rds")
@@ -98,3 +108,73 @@ plot_bar(fungi, fill='Phylum')
 plot_heatmap(fungi)
 plot_heatmap(agaricomycetes)
 plot_bar(agaricomycetes, fill="Family", facet_grid="Order")
+
+glom_and_count <- function(phylo, rank="Species") {
+  glom <- tax_glom(phylo, taxrank = rank, NArm = FALSE)
+  glom.sums <- data.frame(taxa_sum = taxa_sums(glom))
+  taxa  <- merge(tax_table(glom), glom.sums, by=0, all=TRUE)
+  # ordered_taxa <- taxa[with(taxa, order(taxa_sum, decreasing = TRUE)), ]
+  total <- sum(taxa$taxa_sum)
+  taxa$prop <- taxa$taxa_sum / total
+  return(taxa)
+}
+
+simple_view <- function(df, title) {
+  View(df[1:100, c('Row.names', 'Genus', 'Species', 'taxa_sum', 'prop')], title = title)
+}
+
+top_species_its1 <- glom_and_count(its1, "Species")
+top_species_its2 <- glom_and_count(its2, "Species")
+top_species_full_its <- glom_and_count(full_its, "Species")
+
+simple_view(top_species_full_its, "Full ITS")
+simple_view(top_species_its2, "ITS2")
+
+merged <- merge(x = top_species_its2, y = top_species_its1, by=c("Family", "Genus", "Species"), all = TRUE)
+# d <- data.frame(Species = merged$Species)
+d <- merged[, c('Species', 'prop.x', 'prop.y')]
+d[is.na(d$prop.x), "prop.x"] <- 0
+d[is.na(d$prop.y), "prop.y"] <- 0
+t.test(d$prop.x, d$prop.y, paired = TRUE)
+# d$prop_diff <- diff$prop.y - diff$prop.x
+
+
+top_genus_its1 <- glom_and_count(filter_at_least(its1_fungi, otu_size_gt), "Genus")
+top_genus_its2 <- glom_and_count(filter_at_least(its2_fungi, otu_size_gt), "Genus")
+top_genus_full_its <- glom_and_count(filter_at_least(full_its_fungi, otu_size_gt), "Genus")
+
+
+d_m <- merge_w_props(top_genus_its1, top_genus_its2)
+
+chisq.test(d_m$taxa_sum.y, p = d_m$prop.x)
+
+merge_w_props <- function(x, y) {
+  m <- merge(x = x, y = y, by=c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species"), all = TRUE)
+  d_m <- m[, c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species", 'prop.x', 'prop.y', 'taxa_sum.x', 'taxa_sum.y')]
+  d_m[is.na(d_m$prop.x), "prop.x"] <- 0
+  d_m[is.na(d_m$prop.y), "prop.y"] <- 0
+  d_m[is.na(d_m$taxa_sum.x), "taxa_sum.x"] <- 0
+  d_m[is.na(d_m$taxa_sum.y), "taxa_sum.y"] <- 0
+  return(d_m)
+}
+
+its1.v.its2 <- merge_w_props(top_genus_its1, top_genus_its2)
+its1.v.full <- merge_w_props(top_genus_its1, top_genus_full_its)
+its2.v.full <- merge_w_props(top_genus_its2, top_genus_full_its)
+
+plot(its1.v.its2$prop.x, its1.v.its2$prop.y)
+abline(a=0, b=1)
+
+plot(its1.v.full$prop.x, its1.v.full$prop.y)
+abline(a=0, b=1)
+plot(its2.v.full$prop.x, its2.v.full$prop.y)
+abline(a=0, b=1)
+
+t.test(its1.v.its2$prop.x, its1.v.its2$prop.y, paired = TRUE)
+t.test(its1.v.full$prop.x, its1.v.full$prop.y, paired = TRUE)
+t.test(its2.v.full$prop.x, its2.v.full$prop.y, paired = TRUE)
+
+
+ts <- transform_sample_counts(its1, function(x) 100 * x / sum(x))
+filter_taxa(ts, function (y) {sum(y) > 0.5 }, prune=TRUE)
+transform_sample_counts(full_its, function(x) 100 * x / sum(x))
