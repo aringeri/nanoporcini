@@ -10,56 +10,11 @@ params.rdp_lsu_trained_model_dir = "$baseDir/data/db/RDP-LSU/RDPClassifier_fungi
 params.outdir = 'output'
 params.classifier = 'blast'
 
-include { NANOPLOT as NANOPLOT_2 } from './modules/nf-core/nanoplot'
-include {
-    NANOPLOT_SINGLE;
-    NANOPLOT_SINGLE as NANOPLOT_SINGLE_2;
-    NANOPLOT_SINGLE as NANOPLOT_SINGLE_3
-} from './modules/local/nanoplot_single'
-include { PORECHOP_PORECHOP } from './modules/nf-core/porechop/porechop'
-include { FILTLONG; FILTLONG as FILTLONG_2 } from './modules/nf-core/filtlong'
-
-include { VSEARCH_FILTER_MAX_EE } from './modules/local/vsearch/filter_ee'
-include { VSEARCH_FILTER_MAX_EE as VSEARCH_FILTER_MAX_EE_2 } from './modules/local/vsearch/filter_ee'
-
-include { ITSXPRESS } from './modules/local/itsxpress'
-include { ITSX } from './modules/local/itsx'
-
-include { CHOPPER } from './modules/local/chopper'
-
-include {
-    SEQKIT_FQ2FA
-    SEQKIT_FQ2FA as SEQKIT_FQ2FA_2
-    SEQKIT_FQ2FA as SEQKIT_FQ2FA_3
-} from './modules/local/seqkit/fq2fa'
-include { SEQKIT_REMOVE_CHIMERAS } from './modules/local/seqkit/remove'
-include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
-include {
-    FASTQ_CONCAT
-    FASTQ_CONCAT as FASTQ_CONCAT_2
-} from './modules/local/fastq_concat'
-
-include { VSEARCH_DEREPLICATE } from './modules/local/vsearch/dereplicate'
-include { VSEARCH_DEREPLICATE as VSEARCH_DEREPLICATE_2 } from './modules/local/vsearch/dereplicate'
-
-include { VSEARCH_CLUSTER } from './modules/local/vsearch/cluster'
-include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
-include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
-include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
 include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_reads'
-include { VSEARCH_SINTAX } from './modules/nf-core/vsearch/sintax'
+include { CHOPPER } from './modules/local/chopper'
+include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
 
-
-include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
-include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
-include { ImportSintaxTaxonomyIntoPhyloseq } from './workflows/phyloseq/import/sintax'
-include { ClassifyTaxonomyBlast } from "./workflows/classify"
-include { ClassifyRDP } from "./workflows/ClassifyRDP"
-
-include { PHYLOSEQ; CreatePhyloseqObject } from './modules/local/phyloseq'
-
-include { CLUSTER } from './workflows/vsearch_cluster'
 include { ExtractRegions } from './workflows/extract_regions'
 include {
     qualityControl;
@@ -70,14 +25,35 @@ include {
 } from './workflows/qualityControl'
 
 include {
-    FindReadsWithID
-    FindReadsWithID as FindReadsWithID_ITS2
-    FindReadsWithID as FindReadsWithID_LSU
-} from './modules/local/seqkit/FindReadsWithID'
+    SEQKIT_FQ2FA
+    SEQKIT_FQ2FA as SEQKIT_FQ2FA_2
+    SEQKIT_FQ2FA as SEQKIT_FQ2FA_3
+} from './modules/local/seqkit/fq2fa'
+
+include { SEQKIT_REMOVE_CHIMERAS } from './modules/local/seqkit/remove'
 
 include {
-    seqkit
-} from './modules/local/seqkit/seqkit'
+    FASTQ_CONCAT
+    FASTQ_CONCAT as FASTQ_CONCAT_2
+} from './modules/local/fastq_concat'
+
+include { VSEARCH_DEREPLICATE } from './modules/local/vsearch/dereplicate'
+
+include { VSEARCH_CLUSTER } from './modules/local/vsearch/cluster'
+include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
+include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
+include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
+
+include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
+include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
+include { ClassifyTaxonomyBlast } from "./workflows/classify"
+include { ClassifyRDP } from "./workflows/ClassifyRDP"
+
+include { CreatePhyloseqObject } from './modules/local/phyloseq'
+
+include { FindReadsWithID } from './modules/local/seqkit/FindReadsWithID'
+
+include { seqkit } from './modules/local/seqkit/seqkit'
 
 def collectWithId(id, ch) {
     ch.collect { meta, read ->
