@@ -9,8 +9,9 @@ params.rdp_lsu_db = "$baseDir/data/db/RDP-LSU/RDP-LSU-training-11-dada2/RDP_LSU_
 params.rdp_lsu_trained_model_dir = "$baseDir/data/db/RDP-LSU/RDPClassifier_fungiLSU_trainsetNo11_trained/"
 params.outdir = 'output'
 params.classifier = 'blast'
+params.trim_adapters = false
 
-
+include { dorado_trim_adapters } from './modules/local/dorado/trim'
 include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_reads'
 include { CHOPPER } from './modules/local/chopper'
 include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
@@ -22,6 +23,7 @@ include {
     qualityControl as qualityControl_itsx
     qualityControl as qualityControl_q_filter
     qualityControl as qualityControl_chimera
+    qualityControl as qualityControl_adapter
 } from './workflows/qualityControl'
 
 include {
@@ -87,6 +89,11 @@ workflow {
         }
 
     qualityControl('01-raw_reads_all_samples', ch_reads)
+
+    if (params.trim_adapters) {
+        no_adapters = dorado_trim_adapters(ch_reads)
+        qualityControl_adapter('XX-adapter-trimming', no_adapters)
+    }
 
     oriented = CUTADAPT_REORIENT_READS(ch_reads)
 
