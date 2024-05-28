@@ -8,7 +8,7 @@ process dorado_trim_adapters {
         tuple val(meta), path("*adapter-trim.fq"), emit: trimmed_reads
 
     script:
-    def prefix = "${meta.id}.adapter-trim.fq"
+    def prefix = "${meta.id}.adapter-trim.fq.gz"
     if ("$prefix" == "$untrimmed") {
         error("Input and output names are the same")
     }
@@ -16,6 +16,6 @@ process dorado_trim_adapters {
     """
     dorado trim \\
         --emit-fastq --no-trim-primers \\
-        $untrimmed > $prefix
+        $untrimmed | gzip > $prefix
     """
 }
