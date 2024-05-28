@@ -1,7 +1,7 @@
 include { FASTQ_CONCAT } from '../modules/local/fastq_concat'
 include { RENAME_BARCODE_LABEL } from '../modules/local/rename_barcode_label'
 include { VSEARCH_DEREPLICATE } from '../modules/local/vsearch/dereplicate'
-include { VSEARCH_CLUSTER_A } from '../modules/local/vsearch/cluster'
+include { VSEARCH_CLUSTER } from '../modules/local/vsearch/cluster'
 
 workflow CLUSTER {
     take:
@@ -12,7 +12,7 @@ workflow CLUSTER {
             | RENAME_BARCODE_LABEL
 
         cluster_out = VSEARCH_DEREPLICATE(prepped_for_vsearch.reads).reads
-            | VSEARCH_CLUSTER_A
+            | VSEARCH_CLUSTER
     
     emit:
         otu = cluster_out.otu

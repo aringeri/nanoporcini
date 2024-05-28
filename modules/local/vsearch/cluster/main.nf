@@ -1,4 +1,4 @@
-process VSEARCH_CLUSTER_A {
+process VSEARCH_CLUSTER {
     tag "$meta.id - $meta.region"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?

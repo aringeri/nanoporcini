@@ -26,13 +26,6 @@
                             "modules"
                         ]
                     },
-                    "vsearch/cluster": {
-                        "branch": "master",
-                        "git_sha": "d97b335eb448073c1b680710303c02a55f40c77c",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
                     "vsearch/sintax": {
                         "branch": "master",
                         "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",

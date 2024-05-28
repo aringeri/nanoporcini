@@ -34,12 +34,15 @@ include {
 } from './modules/local/seqkit/fq2fa'
 include { SEQKIT_REMOVE_CHIMERAS } from './modules/local/seqkit/remove'
 include { RENAME_BARCODE_LABEL } from './modules/local/rename_barcode_label'
-include { FASTQ_CONCAT } from './modules/local/fastq_concat'
+include {
+    FASTQ_CONCAT
+    FASTQ_CONCAT as FASTQ_CONCAT_2
+} from './modules/local/fastq_concat'
 
 include { VSEARCH_DEREPLICATE } from './modules/local/vsearch/dereplicate'
 include { VSEARCH_DEREPLICATE as VSEARCH_DEREPLICATE_2 } from './modules/local/vsearch/dereplicate'
 
-include { VSEARCH_CLUSTER_A } from './modules/local/vsearch/cluster'
+include { VSEARCH_CLUSTER } from './modules/local/vsearch/cluster'
 include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
 include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
 include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
@@ -107,7 +110,11 @@ workflow {
             [ [id: removeFileEndings(fastq.name, ".fastq.gz", ".fq.gz")], fastq]
         }
 
+    qualityControl('01-raw_reads_all_samples', ch_reads)
+
     oriented = CUTADAPT_REORIENT_READS(ch_reads)
+
+    qualityControl_postPrimer('02-post_primer_trimming', oriented.reads)
 
     extracted = ExtractRegions(oriented.reads)
 
@@ -116,6 +123,8 @@ workflow {
         .mix(extracted.full_its)
         .mix(extracted.lsu)
 
+    qualityControl_itsx('03-post_its_extraction', regions)
+
     filtered_reads = CHOPPER(
         regions.map { meta, reads ->
             def args = params.qualityFiltering[meta.region]
@@ -123,58 +132,55 @@ workflow {
         }
     ).reads
 
-    filtered_reads_full_its = filtered_reads.filter { meta, reads -> meta.region == "FULL_ITS" }
+    qualityControl_q_filter('04-post_quality_filtering', filtered_reads)
 
-//    filtered_reads_full_its.view()
-
-    pooled_full_its = FASTQ_CONCAT(collectByRegionWithId("pooled_full_its", filtered_reads_full_its)).merged_reads
+    pooled = FASTQ_CONCAT(collectByRegionWithId("all_samples", filtered_reads)).merged_reads
         | RENAME_BARCODE_LABEL
-    pooled_full_its_derep = VSEARCH_DEREPLICATE(pooled_full_its)
 
-//    pooled_full_its.reads.view()
+    pooled_derep = VSEARCH_DEREPLICATE(pooled)
 
-    uchime_denovo = VSEARCH_UCHIME_DENOVO(pooled_full_its_derep.reads)
-//    uchime_denovo.chimeras.view()
-    uchime_ref = SEQKIT_FQ2FA(pooled_full_its_derep.reads).fasta
-        .map { meta, fasta -> tuple(meta, fasta, params.unite_db) }
+    uchime_denovo = VSEARCH_UCHIME_DENOVO(pooled_derep.reads)
+
+    uchime_ref = SEQKIT_FQ2FA(pooled_derep.reads).fasta
+        .map { meta, fasta ->
+            def db = (meta.region == 'LSU')
+                    ? "$baseDir/data/db/RDP-LSU/rdp_train.LSU.dada2.fasta.gz"
+                    : params.unite_db
+            [meta, fasta, db]
+        }
         | VSEARCH_UCHIME_REF
 
-//    uchime_ref.chimeras.view()
+    nonchimeras = SEQKIT_REMOVE_CHIMERAS(
+        pooled_derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
+    )
 
-    full_its_nonchimeras = SEQKIT_REMOVE_CHIMERAS(
-        pooled_full_its_derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
-    )
-//    full_its_nonchimeras.view()
+    qualityControl_chimera('05-post_chimera_filtering', nonchimeras)
 
-    full_its_centroids = seqkit(
-            "seq --only-id --id-regexp '([^\\s,;]+);'",
-            VSEARCH_CLUSTER_A(full_its_nonchimeras).centroids
+    centroids = seqkit(
+        "seq --only-id --id-regexp '([^\\s,;]+);'",
+        VSEARCH_CLUSTER(nonchimeras).centroids
     )
-    full_its_otus = VSEARCH_MAP_READS_TO_OTUS(
-        SEQKIT_FQ2FA_2(pooled_full_its).join(full_its_centroids)
+
+    otus = VSEARCH_MAP_READS_TO_OTUS(
+        SEQKIT_FQ2FA_2(pooled).join(centroids)
     )
+
+    all_centroids = FASTQ_CONCAT_2(collectWithId('all_centroids', centroids)).merged_reads
 
     region_matches = (
         FindReadsWithID(
-            full_its_centroids.first(), // convert to value channel so it can be re-used for each region
-            collectByRegionWithId('full_its_centroid_matches', filtered_reads).filter { meta, _ -> meta.region != "FULL_ITS" }
+            all_centroids,//.first(), // convert to value channel so it can be re-used for each region
+            collectByRegionWithId('centroid_matches', filtered_reads)
         ) | SEQKIT_FQ2FA_3
     ).branch { meta, reads ->
         lsu: meta.region == "LSU"
         its: true
     }
-//    region_matches.its.view()
-//    region_matches.lsu.view()
-
-//    its1_centroid_reads = FindReadsWithID(full_its_centroids, filtered_reads.its1.collect{meta, reads -> reads})
-//    its2_centroid_reads = FindReadsWithID_ITS2(full_its_centroids, filtered_reads.its2.collect{meta, reads -> reads})
-//    lsu_centroid_reads = FindReadsWithID_LSU(full_its_centroids, filtered_reads.lsu.collect{meta, reads -> reads})
-//    its1_centroid_reads.view()
 
     uniteDB = PrepUniteDBForQiime(params.unite_db)
 
     tax_rds_its = ClassifyTaxonomyBlast(
-        full_its_centroids.mix(region_matches.its),
+        region_matches.its,
         uniteDB.blastDB,
         uniteDB.taxonomy
     ).classifications | LoadTaxTableIntoPhyloseq
@@ -182,48 +188,12 @@ workflow {
     tax_rds_lsu = ClassifyRDP(region_matches.lsu, params.region.LSU.rdp_trained_model_dir).tax_rds
 
     tax_rds = tax_rds_its.mix(tax_rds_lsu)
-//    tax_rds.view()
-//    full_its_otus.otu_tab.view()
 
-    otu_and_tax = tax_rds.combine(full_its_otus.otu_tab.map{ meta, otu -> otu })
-            .map { meta, tax, otu ->  [meta, tax, otu] } // re-order parameters
-
-    otu_and_tax.view()
-    CreatePhyloseqObject(
-        otu_and_tax
-    )
-
-    /*
-
-    centroids = cluster_out.centroids.branch {
-        lsu: it[0].region == "LSU"
-        its: true
-    }
-
-    tax_rds_lsu = ClassifyRDP(centroids.lsu, params.region.LSU.rdp_trained_model_dir).tax_rds
-
-    if (params.classifier == "blast") {
-        uniteDB = PrepUniteDBForQiime(params.unite_db)
-
-        cResults = ClassifyTaxonomyBlast(
-                centroids.its,
-                uniteDB.blastDB,
-                uniteDB.taxonomy
+    tax_and_otu = tax_rds.map{ meta, tax -> [ meta.subMap('region'), tax ] }
+        .join(
+            otus.otu_tab.map{ meta, otu -> [ meta.subMap('region'), otu ] }
         )
+        .map { meta, tax, otu -> [ meta + [id: "clustered-by-region"], tax, otu ] }
 
-        tax_rds_its = LoadTaxTableIntoPhyloseq(cResults.classifications)
-    } else if (params.classifier == "sintax") {
-        tax_rds_its = VSEARCH_SINTAX(centroids.its, params.sintax_db)
-                .tsv
-                | ImportSintaxTaxonomyIntoPhyloseq
-
-    } else {
-        error "input param 'classifier' not defined or not supported: ${params.classifier}"
-    }
-
-    tax_rds = tax_rds_its.mix(tax_rds_lsu)
-
-    CreatePhyloseqObject(
-            otus.otu_tab.join(tax_rds).map { meta, otu, tax ->  [meta, tax, otu] } // re-order parameters
-    )*/
+    CreatePhyloseqObject(tax_and_otu)
 }

@@ -1,7 +1,7 @@
 process ImportQiime2TaxonomyIntoPhyloseq {
     tag "$meta.id - $meta.region"
 
-    container 'ghcr.io/aringeri/phyloseq-speedytax'
+    container 'ghcr.io/aringeri/phyloseq-speedytax:v1.0.4'
 
     input:
         tuple val(meta), path(tax_tsv)
