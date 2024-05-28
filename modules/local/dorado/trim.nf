@@ -5,7 +5,7 @@ process dorado_trim_adapters {
         tuple val(meta), path(untrimmed)
 
     output:
-        tuple val(meta), path("*adapter-trim.fq"), emit: trimmed_reads
+        tuple val(meta), path("*adapter-trim.fq.gz"), emit: trimmed_reads
 
     script:
     def prefix = "${meta.id}.adapter-trim.fq.gz"
