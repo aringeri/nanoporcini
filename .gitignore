@@ -5,3 +5,6 @@ work/*
 .vscode/*
 data/db/*
 .nf-test*
+.RData
+.Rhistory
+.idea/

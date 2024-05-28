@@ -1,4 +1,3 @@
-include { NANOPLOT_BULK } from '../modules/local/nanoplot_bulk'
 
 def collectWithId(id, ch) {
   ch.collect { meta, read -> 
