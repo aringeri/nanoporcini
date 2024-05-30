@@ -26,6 +26,7 @@ process CHOPPER {
     chopper \\
         --quality $args.minQualityPhred \\
         ${args.minLength != null ? "--minlength $args.minLength" : ""} \\
+        ${args.maxLength != null ? "--maxlength $args.maxLength" : ""} \\
         --threads $task.cpus \\
         2> >(tee -a ${prefix}.log >&2) \\
         | gzip -n > ${prefix}.filtered.fastq.gz

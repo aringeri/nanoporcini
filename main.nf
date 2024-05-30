@@ -91,8 +91,8 @@ workflow {
     qualityControl('01-raw_reads_all_samples', ch_reads)
 
     if (params.trim_adapters) {
-        no_adapters = dorado_trim_adapters(ch_reads)
-        qualityControl_adapter('XX-adapter-trimming', no_adapters)
+        ch_reads = dorado_trim_adapters(ch_reads)
+        qualityControl_adapter('XX-adapter-trimming', ch_reads)
     }
 
     oriented = CUTADAPT_REORIENT_READS(ch_reads)

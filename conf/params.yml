@@ -1,13 +1,19 @@
 qualityFiltering:
   ITS1:
     minQualityPhred: 20
+    minLength: 40
+    maxLength: 2000
   ITS2:
     minQualityPhred: 20
+    minLength: 40
+    maxLength: 2000
   FULL_ITS:
     minQualityPhred: 20
     minLength: 500
+    maxLength: 6000
   LSU:
-    minQualityPhred: 15
+    minQualityPhred: 20
+    minLength: 40
 region:
   LSU:
     classifier: "dada2"
