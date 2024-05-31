@@ -90,12 +90,14 @@ workflow {
 
     qualityControl('01-raw_reads_all_samples', ch_reads)
 
+    renamed = RENAME_BARCODE_LABEL(ch_reads)
+
     if (params.trim_adapters) {
-        ch_reads = dorado_trim_adapters(ch_reads)
-        qualityControl_adapter('XX-adapter-trimming', ch_reads)
+        renamed = dorado_trim_adapters(renamed)
+        qualityControl_adapter('XX-adapter-trimming', renamed)
     }
 
-    oriented = CUTADAPT_REORIENT_READS(ch_reads)
+    oriented = CUTADAPT_REORIENT_READS(renamed)
 
     qualityControl_postPrimer('02-post_primer_trimming', oriented.reads)
 
@@ -118,7 +120,6 @@ workflow {
     qualityControl_q_filter('04-post_quality_filtering', filtered_reads)
 
     pooled = FASTQ_CONCAT(collectByRegionWithId("all_samples", filtered_reads)).merged_reads
-        | RENAME_BARCODE_LABEL
 
     pooled_derep = VSEARCH_DEREPLICATE(pooled)
 
