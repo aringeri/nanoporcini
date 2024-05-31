@@ -55,7 +55,10 @@ include { CreatePhyloseqObject } from './modules/local/phyloseq'
 
 include { FindReadsWithID } from './modules/local/seqkit/FindReadsWithID'
 
-include { seqkit } from './modules/local/seqkit/seqkit'
+include {
+    seqkit
+    seqkit as seqkit_2
+} from './modules/local/seqkit/seqkit'
 
 def collectWithId(id, ch) {
     ch.collect { meta, read ->
@@ -151,10 +154,16 @@ workflow {
 
     all_centroids = FASTQ_CONCAT_2(collectWithId('all_centroids', centroids)).merged_reads
 
+    // Need to remove barcode here so ids match the centroid ids
+    filtered_reads_no_barcode = seqkit_2(
+            "seq --only-id --id-regexp '([^\\s,;]+);'",
+            filtered_reads
+    )
+
     region_matches = (
         FindReadsWithID(
             all_centroids,//.first(), // convert to value channel so it can be re-used for each region
-            collectByRegionWithId('centroid_matches', filtered_reads)
+            collectByRegionWithId('centroid_matches', filtered_reads_no_barcode)
         ) | SEQKIT_FQ2FA_3
     ).branch { meta, reads ->
         lsu: meta.region == "LSU"
