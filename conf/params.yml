@@ -1,11 +1,11 @@
 qualityFiltering:
   ITS1:
     minQualityPhred: 20
-    minLength: 40
+    minLength: 150
     maxLength: 2000
   ITS2:
     minQualityPhred: 20
-    minLength: 40
+    minLength: 150
     maxLength: 2000
   FULL_ITS:
     minQualityPhred: 20
@@ -14,6 +14,11 @@ qualityFiltering:
   LSU:
     minQualityPhred: 20
     minLength: 40
+primers:
+#  fwd: "CTTGGTCATTTAGAGGAAGTAA" # ITSF1 (5'->3')
+#  rev_rc: "CCCGTCTTGAAACACGG" # LRU3 (reverse complement)
+  fwd: "AACTTAAAGGAATTGACGGAAG" # NS5 (SSU)
+  rev_rc: "GGTAAGCAGAACTGGCG" # LRU3 (reverse complement)
 region:
   LSU:
     classifier: "dada2"

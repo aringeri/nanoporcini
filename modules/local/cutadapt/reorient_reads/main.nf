@@ -16,8 +16,8 @@ process CUTADAPT_REORIENT_READS {
 
     script:
         def prefix = task.ext.prefix ?: "${meta.id}"
-        fwd_primer = "CTTGGTCATTTAGAGGAAGTAA" // ITSF1 (5'->3')
-        rev_primer_rc = "CCCGTCTTGAAACACGG" // LRU3 (reverse complement)
+        fwd_primer = params.primers.fwd
+        rev_primer_rc = params.primers.rev_rc
         // error = "1"
         action = "trim"
         """
