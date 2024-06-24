@@ -10,6 +10,7 @@ params.rdp_lsu_trained_model_dir = "$baseDir/data/db/RDP-LSU/RDPClassifier_fungi
 params.outdir = 'output'
 params.classifier = 'blast'
 params.trim_adapters = false
+params.qc_quality_profile = true
 
 include { dorado_trim_adapters } from './modules/local/dorado/trim'
 include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_reads'
