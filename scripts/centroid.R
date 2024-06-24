@@ -26,8 +26,9 @@ import_tax_tsv_phyloseq <- function(path) {
   )
 }
 
+import_tax_tsv('output/test-centroid-based/qiime-export/FULL_ITS/centroid_matches/output/taxonomy.tsv')
 
-its1_tax_table <- import_tax_tsv('output/test-centroid-based/qiime-export/ITS1/full_its_centroid_matches/output/taxonomy.tsv')
+its1_tax_table <- import_tax_tsv('output/test-centroid-based/qiime-export/ITS1/centroid_matches/output/taxonomy.tsv')
 # its1 <- tax_table(readRDS("output/test-centroid-based/phyloseq/ITS1/full_its_centroid_matches/blast/full_its_centroid_matches.phyloseq.rds"))
 # its1_tax_table %>% dplyr::mutate(Species = paste0('s_', Species)) %>%
 #   merge(its1, by=0, all=TRUE) %>%
@@ -36,13 +37,13 @@ its1_tax_table <- import_tax_tsv('output/test-centroid-based/qiime-export/ITS1/f
 #   View()
 # rownames(its1_tax_table) <- paste0(rownames(its1_tax_table), ".ITS1")
 # its1_tax_table$Region <- rep("ITS1", dim(its1_tax_table)[1])
-its2_tax_table <- import_tax_tsv('output/test-centroid-based/qiime-export/ITS2/full_its_centroid_matches/output/taxonomy.tsv')
+its2_tax_table <- import_tax_tsv('output/test-centroid-based/qiime-export/ITS2/centroid_matches/output/taxonomy.tsv')
 #rownames(its2_tax_table) <- paste0(rownames(its2_tax_table), ".ITS2")
 # its2_tax_table$Region <- rep("ITS2", dim(its2_tax_table)[1])
-full_its_tax_table <- import_tax_tsv('output/test-centroid-based/qiime-export/FULL_ITS/pooled_full_its/output/taxonomy.tsv')
+full_its_tax_table <- import_tax_tsv('output/test-centroid-based/qiime-export/FULL_ITS/centroid_matches/output/taxonomy.tsv')
 # full_its_tax_table$Region <- rep("FULL_ITS", dim(full_its_tax_table)[1])
 # rownames(full_its_tax_table) <- paste0(rownames(full_its_tax_table), ".FULL_ITS")
-lsu_tax_table <- read.table('output/test-centroid-based/rdp-dada2/LSU/full_its_centroid_matches/prefix.tsv', sep='\t', header = TRUE)
+lsu_tax_table <- read.table('output/test-centroid-based/rdp-dada2/LSU/centroid_matches/prefix.tsv', sep='\t', header = TRUE)
 lsu_tax_table$Species <- NA
 # lsu_tax_table$Region <- rep("LSU", dim(lsu_tax_table)[1])
 #rownames(lsu_tax_table) <- paste0(rownames(lsu_tax_table), ".LSU")
@@ -102,7 +103,7 @@ cowplot::plot_grid(plotlist = ps, ncol = 2, labels=c("ITS1", "ITS2", "FULL_ITS",
 
 count_lowest_assignment_rank <- function(tax) {
   ranks <- colnames(tax)
-  result <- data.frame(count = rep(0, length(ranks) + 1 ), row.names = c(ranks, 'Unassigned'))
+  result <- data.frame(count = rep(0, length(ranks) + 1 ), row.names = c('Unassigned', ranks))
   for (rowname in rownames(tax)) {
     row <- tax[rowname,]
     idx <- which(!is.na(row) & row != 'Unassigned')
