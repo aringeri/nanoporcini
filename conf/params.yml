@@ -1,18 +1,18 @@
 qualityFiltering:
   ITS1:
-    minQualityPhred: 20
+    minQualityPhred: 30
     minLength: 90
     maxLength: 2000
   ITS2:
-    minQualityPhred: 20
+    minQualityPhred: 30
     minLength: 90
     maxLength: 2000
   FULL_ITS:
-    minQualityPhred: 20
+    minQualityPhred: 30
     minLength: 300
     maxLength: 6000
   LSU:
-    minQualityPhred: 20
+    minQualityPhred: 30
     minLength: 900
 primers:
 #  fwd: "CTTGGTCATTTAGAGGAAGTAA" # ITSF1 (5'->3')
