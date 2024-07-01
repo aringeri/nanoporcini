@@ -21,7 +21,7 @@ process VSEARCH_MAP_READS_TO_OTUS {
     vsearch \\
         --usearch_global $all_reads \\
         --db $otus \\
-        --id 0.98 \\
+        --id 0.97 \\
         --threads $task.cpus \\
         --strand plus \\
         --sizein \\
