@@ -93,6 +93,7 @@ workflow {
         .map{ fastq ->
             [ [id: removeFileEndings(fastq.name, ".fastq.gz", ".fq.gz")], fastq]
         }
+        .filter { meta, fastq -> meta.id !in params.exclude }
 
     qualityControl('01-raw_reads_all_samples', ch_reads)
 

@@ -32,3 +32,9 @@ extract:
   ITS2: false
   FULL_ITS: true
   LSU: false
+exclude:
+  - '20221208.Rep1_Run2_ITS_Fungal_database.Aspergillus_niger.BC44'
+  - '20221208.Rep1_Run2_ITS_Fungal_database.Meyerozyma_guillermondii.BC69'
+  - '20221208.Rep1_Run2_ITS_Fungal_database.Cryptococcus_albidus.BC58'
+  - '20221208.Rep1_Run2_ITS_Fungal_database.Yarrowia_lipolytica.BC82'
+  - '20221208.Rep1_Run2_ITS_Fungal_database.Galactomyces_geotrichum.BC64'
