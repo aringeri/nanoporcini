@@ -10,18 +10,22 @@ workflow ExtractRegions {
         reads // reads to classify in fastq format
 
     main:
-        its1 = ITSXPRESS_ITS1(reads, "ITS1")
-        its2 = ITSXPRESS_ITS2(reads, "ITS2")
-        full_its = ITSXPRESS_FULL(reads, "FULL_ITS")
-        itsx = SEQKIT_FQ2FA(reads) | ITSX_LSU
-        
-        lsu_mapped = RecoverRegionsFromFastq(reads.join(itsx.positions))
+        its1 = params.extract.ITS1 ?  ITSXPRESS_ITS1(reads, "ITS1").reads : channel.empty()
+        its2 = params.extract.ITS2 ? ITSXPRESS_ITS2(reads, "ITS2").reads : channel.empty()
+        full_its = params.extract.FULL_ITS ? ITSXPRESS_FULL(reads, "FULL_ITS").reads : channel.empty()
+
+        if (params.extract.LSU) {
+            itsx =  SEQKIT_FQ2FA(reads) | ITSX_LSU
+            lsu_mapped = RecoverRegionsFromFastq(reads.join(itsx.positions)).lsu
+        } else {
+            lsu_mapped = channel.empty()
+        }
     
     emit:
-        its1 = its1.reads.map(addRegionToMetadata("ITS1"))
-        its2 = its2.reads.map(addRegionToMetadata("ITS2"))
-        full_its = full_its.reads.map(addRegionToMetadata("FULL_ITS"))
-        lsu = lsu_mapped.lsu.map(addRegionToMetadata("LSU"))
+        its1 = its1.map(addRegionToMetadata("ITS1"))
+        its2 = its2.map(addRegionToMetadata("ITS2"))
+        full_its = full_its.map(addRegionToMetadata("FULL_ITS"))
+        lsu = lsu_mapped.map(addRegionToMetadata("LSU"))
 }
 
 def addRegionToMetadata(regionId) {

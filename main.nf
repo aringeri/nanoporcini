@@ -47,9 +47,11 @@ include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
 include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
 include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
+include { seqtk_sample } from './modules/local/seqtk/seqtk'
+
 include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
 include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
-include { ClassifyTaxonomyBlast } from "./workflows/classify"
+include { ClassifyTaxonomyBlast; UnGzip } from "./workflows/classify"
 include { ClassifyRDP } from "./workflows/ClassifyRDP"
 
 include { CreatePhyloseqObject } from './modules/local/phyloseq'
@@ -123,13 +125,11 @@ workflow {
 
     qualityControl_q_filter('04-post_quality_filtering', filtered_reads)
 
-    pooled = FASTQ_CONCAT(collectByRegionWithId("all_samples", filtered_reads)).merged_reads
+//     derep = VSEARCH_DEREPLICATE(filtered_reads)
 
-    pooled_derep = VSEARCH_DEREPLICATE(pooled)
+    uchime_denovo = VSEARCH_UCHIME_DENOVO(filtered_reads)
 
-    uchime_denovo = VSEARCH_UCHIME_DENOVO(pooled_derep.reads)
-
-    uchime_ref = SEQKIT_FQ2FA(pooled_derep.reads).fasta
+    uchime_ref = SEQKIT_FQ2FA(filtered_reads).fasta
         .map { meta, fasta ->
             def db = (meta.region == 'LSU')
                     ? "$baseDir/data/db/RDP-LSU/rdp_train.LSU.dada2.fasta.gz"
@@ -139,19 +139,25 @@ workflow {
         | VSEARCH_UCHIME_REF
 
     nonchimeras = SEQKIT_REMOVE_CHIMERAS(
-        pooled_derep.reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
+        filtered_reads.join(uchime_denovo.chimeras).join(uchime_ref.chimeras)
     )
 
     qualityControl_chimera('05-post_chimera_filtering', nonchimeras)
 
+    if (params.sub_sample.enabled) {
+        nonchimeras = seqtk_sample(nonchimeras)
+    }
+
+    pooled = FASTQ_CONCAT(collectByRegionWithId("all_samples", nonchimeras)).merged_reads
+
+    cluster = VSEARCH_CLUSTER(pooled)
+
     centroids = seqkit(
         "seq --only-id --id-regexp '([^\\s,;]+);'",
-        VSEARCH_CLUSTER(nonchimeras).centroids
+        cluster.centroids
     )
 
-    otus = VSEARCH_MAP_READS_TO_OTUS(
-        SEQKIT_FQ2FA_2(pooled).join(centroids)
-    )
+    otus = cluster.otu | UnGzip
 
     all_centroids = FASTQ_CONCAT_2(collectWithId('all_centroids', centroids)).merged_reads
 
@@ -185,7 +191,7 @@ workflow {
 
     tax_and_otu = tax_rds.map{ meta, tax -> [ meta.subMap('region'), tax ] }
         .join(
-            otus.otu_tab.map{ meta, otu -> [ meta.subMap('region'), otu ] }
+            otus.map{ meta, otu -> [ meta.subMap('region'), otu ] }
         )
         .map { meta, tax, otu -> [ meta + [id: "clustered-by-region"], tax, otu ] }
 

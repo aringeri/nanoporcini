@@ -23,3 +23,12 @@ region:
   LSU:
     classifier: "dada2"
     rdp_trained_model_dir: "$baseDir/data/db/RDP-LSU/RDPClassifier_fungiLSU_trainsetNo11_trained/"
+sub_sample:
+  enabled: true
+  count: 2000
+  seed: 1234
+extract:
+  ITS1: false
+  ITS2: false
+  FULL_ITS: true
+  LSU: false

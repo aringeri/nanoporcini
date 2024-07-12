@@ -8,3 +8,8 @@ data/db/*
 .RData
 .Rhistory
 .idea/
+data/
+*.iml
+output/
+qiime/
+scratch/
