@@ -149,7 +149,9 @@ workflow {
         nonchimeras = seqtk_sample(nonchimeras)
     }
 
-    pooled = FASTQ_CONCAT(collectByRegionWithId("all_samples", nonchimeras)).merged_reads
+    derep = VSEARCH_DEREPLICATE(nonchimeras).reads
+
+    pooled = FASTQ_CONCAT(collectByRegionWithId("all_samples", derep)).merged_reads
 
     cluster = VSEARCH_CLUSTER(pooled)
 
