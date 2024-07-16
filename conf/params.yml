@@ -25,8 +25,8 @@ region:
     rdp_trained_model_dir: "$baseDir/data/db/RDP-LSU/RDPClassifier_fungiLSU_trainsetNo11_trained/"
 sub_sample:
   enabled: true
-  count: 2500
-  seed: 11
+  count: 1000
+  seed: 23
 extract:
   ITS1: false
   ITS2: false
