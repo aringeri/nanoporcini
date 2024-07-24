@@ -48,13 +48,14 @@ include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
 include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
 include { seqtk_sample } from './modules/local/seqtk/seqtk'
+include { subsample } from './workflows/subsample'
 
 include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
 include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
 include { ClassifyTaxonomyBlast; UnGzip } from "./workflows/classify"
 include { ClassifyRDP } from "./workflows/ClassifyRDP"
 
-include { CreatePhyloseqObject } from './modules/local/phyloseq'
+include { CreatePhyloseqObject; CreatePhyloseqOTUObject } from './modules/local/phyloseq'
 
 include { FindReadsWithID } from './modules/local/seqkit/FindReadsWithID'
 
@@ -145,58 +146,63 @@ workflow {
 
     qualityControl_chimera('05-post_chimera_filtering', nonchimeras)
 
-    if (params.sub_sample.enabled) {
-        nonchimeras = seqtk_sample(nonchimeras)
-    }
+    subsampled = subsample(nonchimeras)
 
-    derep = VSEARCH_DEREPLICATE(nonchimeras).reads
+    derep = VSEARCH_DEREPLICATE(subsampled).reads
 
-    pooled = FASTQ_CONCAT(collectByRegionWithId("all_samples", derep)).merged_reads
+    pooled = FASTQ_CONCAT(
+        derep.map { meta, reads -> [ meta.subMap('region', 'scenario'), reads ] }
+                    .groupTuple()
+                    .map { meta, reads -> [ meta + [id: "all_samples"], reads ] }
+    ).merged_reads
 
     cluster = VSEARCH_CLUSTER(pooled)
 
-    centroids = seqkit(
-        "seq --only-id --id-regexp '([^\\s,;]+);'",
-        cluster.centroids
-    )
-
     otus = cluster.otu | UnGzip
 
-    all_centroids = FASTQ_CONCAT_2(collectWithId('all_centroids', centroids)).merged_reads
-
-    // Need to remove barcode here so ids match the centroid ids
-    filtered_reads_no_barcode = seqkit_2(
+    if (params.taxonomic_assignment.enabled) {
+        centroids = seqkit(
             "seq --only-id --id-regexp '([^\\s,;]+);'",
-            filtered_reads
-    )
-
-    region_matches = (
-        FindReadsWithID(
-            all_centroids,//.first(), // convert to value channel so it can be re-used for each region
-            collectByRegionWithId('centroid_matches', filtered_reads_no_barcode)
-        ) | SEQKIT_FQ2FA_3
-    ).branch { meta, reads ->
-        lsu: meta.region == "LSU"
-        its: true
-    }
-
-    uniteDB = PrepUniteDBForQiime(params.unite_db)
-
-    tax_rds_its = ClassifyTaxonomyBlast(
-        region_matches.its,
-        uniteDB.blastDB,
-        uniteDB.taxonomy
-    ).classifications | LoadTaxTableIntoPhyloseq
-
-    tax_rds_lsu = ClassifyRDP(region_matches.lsu, params.region.LSU.rdp_trained_model_dir).tax_rds
-
-    tax_rds = tax_rds_its.mix(tax_rds_lsu)
-
-    tax_and_otu = tax_rds.map{ meta, tax -> [ meta.subMap('region'), tax ] }
-        .join(
-            otus.map{ meta, otu -> [ meta.subMap('region'), otu ] }
+            cluster.centroids
         )
-        .map { meta, tax, otu -> [ meta + [id: "clustered-by-region"], tax, otu ] }
+        all_centroids = FASTQ_CONCAT_2(collectWithId('all_centroids', centroids)).merged_reads
 
-    CreatePhyloseqObject(tax_and_otu)
+        // Need to remove barcode here so ids match the centroid ids
+        filtered_reads_no_barcode = seqkit_2(
+                "seq --only-id --id-regexp '([^\\s,;]+);'",
+                filtered_reads
+        )
+
+        region_matches = (
+            FindReadsWithID(
+                all_centroids,//.first(), // convert to value channel so it can be re-used for each region
+                collectByRegionWithId('centroid_matches', filtered_reads_no_barcode)
+            ) | SEQKIT_FQ2FA_3
+        ).branch { meta, reads ->
+            lsu: meta.region == "LSU"
+            its: true
+        }
+
+        uniteDB = PrepUniteDBForQiime(params.unite_db)
+
+        tax_rds_its = ClassifyTaxonomyBlast(
+            region_matches.its,
+            uniteDB.blastDB,
+            uniteDB.taxonomy
+        ).classifications | LoadTaxTableIntoPhyloseq
+
+        tax_rds_lsu = ClassifyRDP(region_matches.lsu, params.region.LSU.rdp_trained_model_dir).tax_rds
+
+        tax_rds = tax_rds_its.mix(tax_rds_lsu)
+
+        tax_and_otu = tax_rds.map{ meta, tax -> [ meta.subMap('region'), tax ] }
+            .join(
+                otus.map{ meta, otu -> [ meta.subMap('region'), otu ] }
+            )
+            .map { meta, tax, otu -> [ meta + [id: "clustered-by-region"], tax, otu ] }
+
+        CreatePhyloseqObject(tax_and_otu)
+    } else {
+        CreatePhyloseqOTUObject(otus)
+    }
 }
