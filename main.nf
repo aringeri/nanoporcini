@@ -38,8 +38,10 @@ include { SEQKIT_REMOVE_CHIMERAS } from './modules/local/seqkit/remove'
 include {
     FASTQ_CONCAT
     FASTQ_CONCAT as FASTQ_CONCAT_2
+    FASTQ_CONCAT as FASTQ_CONCAT_3
 } from './modules/local/fastq_concat'
 
+include { nanoclust } from './workflows/nanoclust'
 include { VSEARCH_DEREPLICATE } from './modules/local/vsearch/dereplicate'
 
 include { VSEARCH_CLUSTER } from './modules/local/vsearch/cluster'
@@ -147,6 +149,15 @@ workflow {
     qualityControl_chimera('05-post_chimera_filtering', nonchimeras)
 
     subsampled = subsample(nonchimeras)
+
+    if ('nanoclust' in params.cluster.methods) {
+        pooled_nanoclust = FASTQ_CONCAT_3(
+                subsampled.map { meta, reads -> [ meta.subMap('region', 'scenario'), reads ] }
+                            .groupTuple()
+                            .map { meta, reads -> [ meta + [id: "all_samples"], reads ] }
+            ).merged_reads
+        nanoclust(pooled_nanoclust)
+    }
 
     derep = VSEARCH_DEREPLICATE(subsampled).reads
 

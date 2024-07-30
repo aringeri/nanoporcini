@@ -1,0 +1,3 @@
+[submodule "pipelines/NanoCLUST"]
+	path = pipelines/NanoCLUST
+	url = https://github.com/genomicsITER/NanoCLUST/
