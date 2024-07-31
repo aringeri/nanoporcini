@@ -22,7 +22,7 @@ workflow nanoclust {
 }
 
 process kmerFreq {
-    container "docker.io/hecrp/nanoclust-kmer_freqs:latest@sha256:f87c141b162123be69808dad0f3f95925d185bb14996cb70ccb9a92604174ca4"
+    container "docker.io/hecrp/nanoclust-kmer_freqs:latest"
 
     input:
         tuple val(meta), path(fastq)
@@ -38,7 +38,7 @@ process kmerFreq {
 }
 
 process umapTransform {
-    container "docker.io/hecrp/nanoclust-read_clustering:latest@sha256:7f7561518ea9118613c2082a9fc77aa45fab375a43f77d15cb415631d3ffc600"
+    container "docker.io/hecrp/nanoclust-read_clustering:latest"
 
     input:
         tuple val(meta), path(kmer_freqs)
@@ -50,7 +50,7 @@ process umapTransform {
 }
 
 process plotMinClusterSizeEffect {
-    container "docker.io/hecrp/nanoclust-read_clustering:latest@sha256:7f7561518ea9118613c2082a9fc77aa45fab375a43f77d15cb415631d3ffc600"
+    container "docker.io/hecrp/nanoclust-read_clustering:latest"
 
     input:
         tuple val(meta), path(umap_tsv)
@@ -87,7 +87,7 @@ process plotMinClusterSizeEffect {
 }
 
 process hdbscanClustering {
-    container "docker.io/hecrp/nanoclust-read_clustering:latest@sha256:7f7561518ea9118613c2082a9fc77aa45fab375a43f77d15cb415631d3ffc600"
+    container "docker.io/hecrp/nanoclust-read_clustering:latest"
 
     input:
         tuple val(meta), path(umap_tsv)
