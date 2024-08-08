@@ -23,8 +23,6 @@ process VSEARCH_UCHIME_REF {
     """
     vsearch --uchime_ref $fasta \\
         --db $db \\
-        --sizein \\
-        --sizeout \\
         --fasta_width 0 \\
         --threads $task.cpus \\
         --log vsearch.log \\

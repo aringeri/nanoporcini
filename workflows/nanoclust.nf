@@ -12,10 +12,18 @@ workflow nanoclust {
         umap = UnGzip(sample_reads)
             | kmerFreq
             | umapTransform
-            | gatherMinClusterSizeStats
+
+        gatherMinClusterSizeStats(umap)
+
+        clusters = hdbscanCluster(umap)
+
+        createOtuTable(clusters)
+        splitReadsByCluster(clusters.join(sample_reads)).reads_by_cluster_fastq_gz
+            | findMostAbundantSeqsInCluster
 }
 
 process kmerFreq {
+    tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-kmer_freqs:latest"
 
     input:
@@ -32,6 +40,7 @@ process kmerFreq {
 }
 
 process umapTransform {
+    tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
     containerOptions "${ workflow.containerEngine == 'singularity' ? '--env NUMBA_CACHE_DIR="./tmp/numba_cache"' : '' }"
 
@@ -42,6 +51,128 @@ process umapTransform {
 
     script:
     template "umap_transform.py"
+}
+
+process hdbscanCluster {
+    tag "${meta.scenario.count}/${meta.scenario.rep}"
+    container "docker.io/hecrp/nanoclust-read_clustering:latest"
+
+    input:
+        tuple val(meta), path(umap_tsv)
+    output:
+        tuple val(meta), path("*.tsv"), emit: clusters
+
+    script:
+    def min_cluster_size_prop=0.005
+    """
+    #!/usr/bin/env python
+
+    import pandas as pd
+    import hdbscan
+
+    umap_out = pd.read_csv("$umap_tsv", delimiter="\t")
+    X = umap_out.loc[:, ["D1", "D2"]]
+
+    nseqs = X.shape[0]
+    df = pd.DataFrame({})
+    min_size = int(max(2, nseqs * $min_cluster_size_prop))
+    clusters = hdbscan.HDBSCAN(min_cluster_size=min_size, cluster_selection_epsilon=0.5).fit_predict(X)
+    umap_out['cluster_id'] = clusters
+
+    umap_out.loc[:, ["read", "cluster_id"]].to_csv(f"hdbscan.output.tsv", sep="\t", index=False)
+    """
+}
+
+process createOtuTable {
+    tag "${meta.scenario.count}/${meta.scenario.rep}"
+    container "docker.io/hecrp/nanoclust-read_clustering:latest"
+
+    input:
+        tuple val(meta), path(clusters_tsv)
+    output:
+        tuple val(meta), path("*.tsv"), emit: otu_table
+
+    script:
+    """
+    #!/usr/bin/env python
+
+    import pandas as pd
+
+    clusters = pd.read_csv("$clusters_tsv", delimiter="\t")
+
+    # extract barcode to new column
+    clusters['barcode'] = clusters['read'].apply(lambda read: read.split(';')[1].split('=')[1])
+
+    # group and count number of reads from each barcode in each cluster
+    grouped_counts = clusters.groupby(['cluster_id', 'barcode']).count()
+
+    # place barcode as columns
+    otu_table = grouped_counts.unstack('barcode', fill_value=0)
+    # drop unused 'read' column level
+    otu_table.columns = otu_table.columns.droplevel()
+
+    otu_table.to_csv("otu_table.tsv", sep="\t")
+    """
+}
+
+process splitReadsByCluster {
+    tag "${meta.scenario.count}/${meta.scenario.rep}"
+
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+            'https://depot.galaxyproject.org/singularity/seqkit:2.6.1--h9ee0642_0':
+            'biocontainers/seqkit:2.6.1--h9ee0642_0' }"
+
+    input:
+        tuple val(meta), path(clusters_tsv), path(reads)
+    output:
+        tuple val(meta), path("*.fastq.gz"), emit: reads_by_cluster_fastq_gz
+        tuple val(meta), path("*.txt"), emit: reads_ids_by_cluster
+
+    script:
+    // assuming read id ends with ';'
+    // will add ';cluster={cluster_id};' details to reads
+    """
+    NCLUSTERS=\$(awk 'NR > 1 {print \$2}' $clusters_tsv | sort -nr | uniq | head -n1)
+
+    for ((i = -1 ; i <= \$NCLUSTERS ; i++));
+    do
+        cluster_id=\$i
+        awk -v cluster="\$cluster_id" '(\$2 == cluster) {print \$1}' $clusters_tsv > "cluster_\${cluster_id}_ids.txt"
+        seqkit grep \\
+            -f "cluster_\${cluster_id}_ids.txt" \\
+            $reads \\
+            | seqkit replace -p '; ' -r ";cluster=\${cluster_id}; " \\
+                -o "cluster_\${cluster_id}_reads.fastq.gz"
+    done
+    """
+}
+
+process findMostAbundantSeqsInCluster {
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/vsearch:2.21.1--h95f258a_0':
+        'biocontainers/vsearch:2.21.1--h95f258a_0' }"
+
+    input:
+        tuple val(meta), path(clusters)
+
+    output:
+        tuple val(meta), path("most_abundant.fastq.gz"), emit: most_abundant
+
+    script:
+    """
+    for cluster in $clusters;
+    do
+        vsearch \\
+            --fastx_uniques "\$cluster" \\
+            --fastqout - \\
+            --topn 1 \\
+            --threads $task.cpus \\
+            2>> vsearch.log \\
+            >> most_abundant.fastq
+    done
+
+    gzip most_abundant.fastq
+    """
 }
 
 process gatherMinClusterSizeStats {

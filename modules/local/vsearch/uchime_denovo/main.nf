@@ -22,8 +22,6 @@ process VSEARCH_UCHIME_DENOVO {
 
     """
     vsearch --uchime_denovo $fasta \\
-        --sizein \\
-        --sizeout \\
         --fasta_width 0 \\
         --threads $task.cpus \\
         --log vsearch.log \\
