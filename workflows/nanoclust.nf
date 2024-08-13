@@ -76,7 +76,7 @@ process hdbscanCluster {
     nseqs = X.shape[0]
     df = pd.DataFrame({})
     min_size = int(max(2, nseqs * $min_cluster_size_prop))
-    clusters = hdbscan.HDBSCAN(min_cluster_size=min_size, cluster_selection_epsilon=0.5).fit_predict(X)
+    clusters = hdbscan.HDBSCAN(min_cluster_size=min_size, cluster_selection_epsilon=0.5, core_dist_n_jobs=${task.cpus}).fit_predict(X)
     umap_out['cluster_id'] = clusters
 
     umap_out.loc[:, ["read", "cluster_id"]].to_csv(f"hdbscan.output.tsv", sep="\t", index=False)
@@ -141,7 +141,7 @@ process splitReadsByCluster {
         seqkit grep \\
             -f "cluster_\${cluster_id}_ids.txt" \\
             $reads \\
-            | seqkit replace -p '; ' -r ";cluster=\${cluster_id}; " \\
+            | seqkit replace -p '(.*);' -r "\\\$1;cluster=\${cluster_id};" \\
                 -o "cluster_\${cluster_id}_reads.fastq.gz"
     done
     """
@@ -165,6 +165,7 @@ process findMostAbundantSeqsInCluster {
         vsearch \\
             --fastx_uniques "\$cluster" \\
             --fastqout - \\
+            --sizeout \\
             --topn 1 \\
             --threads $task.cpus \\
             2>> vsearch.log \\
@@ -177,6 +178,7 @@ process findMostAbundantSeqsInCluster {
 
 process gatherMinClusterSizeStats {
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
+    containerOptions "${ workflow.containerEngine == 'singularity' ? '--env MPLCONFIGDIR="./tmp/mplconfig"' : '' }"
 
     input:
         tuple val(meta), path(umap_tsv)
@@ -197,7 +199,7 @@ process gatherMinClusterSizeStats {
         df = pd.DataFrame({})
         for prop in props:
             min_size = int(max(2, nseqs * prop))
-            a = hdbscan.HDBSCAN(min_cluster_size=min_size, cluster_selection_epsilon=0.5).fit_predict(umap)
+            a = hdbscan.HDBSCAN(min_cluster_size=min_size, cluster_selection_epsilon=0.5, core_dist_n_jobs=${task.cpus}).fit_predict(umap)
             counts = np.unique(a, return_counts=True)
             cluster_result = pd.DataFrame({
                 'cluster': counts[0],
