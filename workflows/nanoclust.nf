@@ -25,6 +25,8 @@ workflow nanoclust {
 process kmerFreq {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-kmer_freqs:latest"
+    label 'large_mem'
+    label 'large_cpu'
 
     input:
         tuple val(meta), path(fastq)
@@ -43,6 +45,8 @@ process umapTransform {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
     containerOptions "${ workflow.containerEngine == 'singularity' ? '--env NUMBA_CACHE_DIR="./tmp/numba_cache"' : '' }"
+    label 'large_mem'
+    label 'med_cpu'
 
     input:
         tuple val(meta), path(kmer_freqs)
@@ -56,6 +60,8 @@ process umapTransform {
 process hdbscanCluster {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
+    label 'mega_mem'
+    label 'large_cpu'
 
     input:
         tuple val(meta), path(umap_tsv)
@@ -86,6 +92,7 @@ process hdbscanCluster {
 process createOtuTable {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
+    label "small_mem"
 
     input:
         tuple val(meta), path(clusters_tsv)
@@ -117,6 +124,7 @@ process createOtuTable {
 
 process splitReadsByCluster {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
+    label 'small_mem'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
             'https://depot.galaxyproject.org/singularity/seqkit:2.6.1--h9ee0642_0':
@@ -151,6 +159,8 @@ process findMostAbundantSeqsInCluster {
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/vsearch:2.21.1--h95f258a_0':
         'biocontainers/vsearch:2.21.1--h95f258a_0' }"
+    label "small_mem"
+    label "small_cpu"
 
     input:
         tuple val(meta), path(clusters)
@@ -179,6 +189,8 @@ process findMostAbundantSeqsInCluster {
 process gatherMinClusterSizeStats {
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
     containerOptions "${ workflow.containerEngine == 'singularity' ? '--env MPLCONFIGDIR="./tmp/mplconfig"' : '' }"
+    label "mega_mem"
+    label "small_cpu"
 
     input:
         tuple val(meta), path(umap_tsv)
