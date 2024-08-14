@@ -25,7 +25,7 @@ workflow nanoclust {
 process kmerFreq {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-kmer_freqs:latest"
-    label 'large_mem'
+    label 'extra_large_mem'
     label 'large_cpu'
 
     input:
@@ -45,7 +45,7 @@ process umapTransform {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
     containerOptions "${ workflow.containerEngine == 'singularity' ? '--env NUMBA_CACHE_DIR="./tmp/numba_cache"' : '' }"
-    label 'large_mem'
+    label 'mega_mem'
     label 'med_cpu'
 
     input:
