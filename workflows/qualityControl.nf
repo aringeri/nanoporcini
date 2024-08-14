@@ -54,6 +54,8 @@ process plotQualityProfile {
 
 process nanoplot_bulk {
     tag "$meta.id"
+    label "small_cpu"
+    label "med_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/nanoplot:1.41.6--pyhdfd78af_0' :
@@ -80,6 +82,8 @@ process nanoplot_bulk {
 
 process nanoplot {
     tag "$meta.stage $meta.id"
+    label "small_cpu"
+    label "small_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/nanoplot:1.41.6--pyhdfd78af_0' :

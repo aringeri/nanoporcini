@@ -1,6 +1,7 @@
 process VSEARCH_DEREPLICATE {
     tag "$meta.id - $meta.region"
-    label 'process_low'
+    label 'small_cpu'
+    label 'med_mem'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/vsearch:2.21.1--h95f258a_0':

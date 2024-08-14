@@ -49,6 +49,7 @@ process PHYLOSEQ {
 
 process CreatePhyloseqObject {
     tag "$meta.id - $meta.region - $params.classifier"
+    label "med_mem"
     
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
          'https://depot.galaxyproject.org/singularity/bioconductor-phyloseq:1.44.0--r43hdfd78af_0' :
@@ -87,6 +88,7 @@ process CreatePhyloseqObject {
 
 process CreatePhyloseqOTUObject {
     tag "$meta.id - $meta.region - $params.classifier"
+    label "med_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
          'https://depot.galaxyproject.org/singularity/bioconductor-phyloseq:1.44.0--r43hdfd78af_0' :
