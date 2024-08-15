@@ -25,7 +25,9 @@ workflow qualityControl {
         plotQualityProfile(combined_reads)
         nanoplot_bulk(combined_reads)
 
-        nanoplot(reads.map{ meta, reads -> [ meta + [stage: stage_name], reads ] })
+        if (params.qc_plot_sample_level) {
+            nanoplot(reads.map{ meta, reads -> [ meta + [stage: stage_name], reads ] })
+        }
 }
 
 process plotQualityProfile {

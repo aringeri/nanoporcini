@@ -51,6 +51,7 @@ include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
 include { seqtk_sample } from './modules/local/seqtk/seqtk'
 include { subsample } from './workflows/subsample'
+include { assignTaxDnabarcoder } from './workflows/assign_tax_dnabarcoder'
 
 include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
 include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
@@ -156,20 +157,25 @@ workflow {
                             .groupTuple()
                             .map { meta, reads -> [ meta + [id: "all_samples"], reads ] }
             ).merged_reads
-        nanoclust(pooled_nanoclust)
+        nanoclust_result = nanoclust(pooled_nanoclust)
+
+        assignTaxDnabarcoder(nanoclust_result.most_abundant_by_cluster)
     }
 
-    derep = VSEARCH_DEREPLICATE(subsampled).reads
+    if ('vsearch' in params.cluster.methods) {
+        derep = VSEARCH_DEREPLICATE(subsampled).reads
 
-    pooled = FASTQ_CONCAT(
-        derep.map { meta, reads -> [ meta.subMap('region', 'scenario'), reads ] }
-                    .groupTuple()
-                    .map { meta, reads -> [ meta + [id: "all_samples"], reads ] }
-    ).merged_reads
+        pooled = FASTQ_CONCAT(
+            derep.map { meta, reads -> [ meta.subMap('region', 'scenario'), reads ] }
+                        .groupTuple()
+                        .map { meta, reads -> [ meta + [id: "all_samples"], reads ] }
+        ).merged_reads
 
-    cluster = VSEARCH_CLUSTER(pooled)
+        cluster = VSEARCH_CLUSTER(pooled)
 
-    otus = cluster.otu | UnGzip
+        otus = cluster.otu | UnGzip
+        CreatePhyloseqOTUObject(otus)
+    }
 
     if (params.taxonomic_assignment.enabled) {
         centroids = seqkit(
@@ -213,7 +219,5 @@ workflow {
             .map { meta, tax, otu -> [ meta + [id: "clustered-by-region"], tax, otu ] }
 
         CreatePhyloseqObject(tax_and_otu)
-    } else {
-        CreatePhyloseqOTUObject(otus)
     }
 }

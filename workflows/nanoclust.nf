@@ -17,9 +17,12 @@ workflow nanoclust {
 
         clusters = hdbscanCluster(umap)
 
-        createOtuTable(clusters)
-        splitReadsByCluster(clusters.join(sample_reads)).reads_by_cluster_fastq_gz
+        otu_table = createOtuTable(clusters)
+        most_abundant = splitReadsByCluster(clusters.join(sample_reads)).reads_by_cluster_fastq_gz
             | findMostAbundantSeqsInCluster
+    emit:
+        most_abundant_by_cluster = most_abundant
+        otu_table = otu_table
 }
 
 process kmerFreq {
@@ -156,6 +159,7 @@ process splitReadsByCluster {
 }
 
 process findMostAbundantSeqsInCluster {
+    tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/vsearch:2.21.1--h95f258a_0':
         'biocontainers/vsearch:2.21.1--h95f258a_0' }"
@@ -187,6 +191,7 @@ process findMostAbundantSeqsInCluster {
 }
 
 process gatherMinClusterSizeStats {
+    tag "${meta.scenario.count}/${meta.scenario.rep}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
     containerOptions "${ workflow.containerEngine == 'singularity' ? '--env MPLCONFIGDIR="./tmp/mplconfig"' : '' }"
     label "mega_mem"

@@ -15,6 +15,7 @@ qualityFiltering:
     minQualityPhred: 20
     minLength: 900
 qc_quality_profile: false
+qc_plot_sample_level: false
 primers:
 #  fwd: "CTTGGTCATTTAGAGGAAGTAA" # ITSF1 (5'->3')
 #  rev_rc: "CCCGTCTTGAAACACGG" # LRU3 (reverse complement)
@@ -50,6 +51,10 @@ cluster:
 
 taxonomic_assignment:
   enabled: false
+  dnabarcoder:
+    ref_db: 'data/db/unite2024/unite2024ITS.fasta'
+    ref_classifications: 'data/db/unite2024/unite2024ITS.classification'
+    cutoffs: 'data/db/dnabarcoder/unite2024ITS.unique.cutoffs.best.json'
 extract:
   ITS1: false
   ITS2: false
