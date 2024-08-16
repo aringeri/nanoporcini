@@ -4,6 +4,7 @@ process SEQKIT_FQ2FA {
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/seqkit:2.6.1--h9ee0642_0':
         'biocontainers/seqkit:2.6.1--h9ee0642_0' }"
+    label "med_mem"
 
     input:
     tuple val(meta), path(fastq)
