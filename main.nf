@@ -51,7 +51,10 @@ include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
 include { seqtk_sample } from './modules/local/seqtk/seqtk'
 include { subsample } from './workflows/subsample'
-include { assignTaxDnabarcoder } from './workflows/assign_tax_dnabarcoder'
+include {
+    assignTaxDnabarcoder
+    assignTaxDnabarcoder as assignTaxDnabarcoder_vsearch
+} from './workflows/assign_tax_dnabarcoder'
 
 include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
 include { LoadTaxTableIntoPhyloseq } from './workflows/phyloseq/import/qiime'
@@ -159,7 +162,11 @@ workflow {
             ).merged_reads
         nanoclust_result = nanoclust(pooled_nanoclust)
 
-        assignTaxDnabarcoder(nanoclust_result.most_abundant_by_cluster)
+        most_abundant = nanoclust_result.most_abundant_by_cluster
+            .map { meta, reads ->
+                [ meta + [cluster_method: "nanoclust"], reads ]
+            }
+        assignTaxDnabarcoder(most_abundant)
     }
 
     if ('vsearch' in params.cluster.methods) {
@@ -175,6 +182,10 @@ workflow {
 
         otus = cluster.otu | UnGzip
         CreatePhyloseqOTUObject(otus)
+
+        cluster.centroids.map { meta, reads ->
+            [ meta + [cluster_method: 'vsearch'], reads ]
+        } | assignTaxDnabarcoder_vsearch
     }
 
     if (params.taxonomic_assignment.enabled) {
