@@ -1,6 +1,8 @@
-include {
-  UnGzip
- } from '../workflows/classify'
+import java.util.stream.Collectors
+import java.util.stream.Stream
+
+include { UnGzip } from '../workflows/classify'
+include { readCorrection } from './nanoclust/consensus'
 
 workflow nanoclust {
     take:
@@ -18,8 +20,15 @@ workflow nanoclust {
         clusters = hdbscanCluster(umap)
 
         otu_table = createOtuTable(clusters)
-        most_abundant = splitReadsByCluster(clusters.join(sample_reads)).reads_by_cluster_fastq_gz
-            | findMostAbundantSeqsInCluster
+        reads_by_cluster = splitReadsByCluster(clusters.join(sample_reads)).reads_by_cluster_fastq_gz
+        most_abundant = findMostAbundantSeqsInCluster(reads_by_cluster)
+
+        flat = reads_by_cluster
+            .flatMap { meta, clusters ->
+                [ Stream.generate{ meta }.limit(clusters.size).collect(Collectors.toList()), clusters ].transpose()
+            }
+            .filter { meta, cluster -> !cluster.getName().contains("_-1_") }
+        readCorrection(flat)
     emit:
         most_abundant_by_cluster = most_abundant
         otu_table = otu_table
