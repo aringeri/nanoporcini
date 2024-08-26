@@ -4,6 +4,8 @@ process seqtk_sample {
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
             'https://depot.galaxyproject.org/singularity/seqtk:1.4--he4a0461_2':
             'biocontainers/seqtk:1.4--he4a0461_2' }"
+    label "small_cpu"
+    label "large_mem"
 
     input:
         tuple val(meta), path(fastx)

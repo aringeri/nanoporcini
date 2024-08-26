@@ -1,5 +1,7 @@
 process SEQKIT_REMOVE_CHIMERAS {
     tag "$meta.id - $meta.region"
+    label "small_cpu"
+    label "large_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/seqkit:2.6.1--h9ee0642_0':
