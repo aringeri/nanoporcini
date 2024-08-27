@@ -2,7 +2,15 @@ import java.util.stream.Collectors
 import java.util.stream.Stream
 
 include { UnGzip } from '../workflows/classify'
-include { readCorrection } from './nanoclust/consensus'
+include {
+    readCorrection
+    draftSelection
+    mapReadsToDraft
+    raconConsensus
+    medakaConsensus
+} from './nanoclust/consensus'
+include { SEQKIT_FQ2FA } from '../modules/local/seqkit/fq2fa'
+// include { FASTQ_CONCAT } from '../modules/local/fastq_concat'
 
 workflow nanoclust {
     take:
@@ -25,10 +33,26 @@ workflow nanoclust {
 
         flat = reads_by_cluster
             .flatMap { meta, clusters ->
-                [ Stream.generate{ meta }.limit(clusters.size).collect(Collectors.toList()), clusters ].transpose()
+                [  clusters.collect { cluster_fname ->
+                      (full,id)=(cluster_fname.getName() =~ /cluster_(\-?\d+)_/)[0]
+                      meta + [ cluster : [ id: id ] ]
+                   },
+                    clusters
+                ].transpose()
             }
-            .filter { meta, cluster -> !cluster.getName().contains("_-1_") }
-        readCorrection(flat)
+            .filter { meta, cluster -> meta.cluster.id != "-1" }
+
+        draft = draftSelection(SEQKIT_FQ2FA(flat))
+        aligned = mapReadsToDraft(draft.draft).aligned
+        racon = raconConsensus(aligned).racon_output
+        medaka = medakaConsensus(racon).consensus
+
+//         reps = FASTQ_CONCAT(
+//             medaka.map { meta, cluster_consensus -> [ meta.subMap('region', 'scenario'), meta.cluster.id, cluster_consensus ] }
+//                 .groupTuple()
+//                 .map { meta, cluster_id, cluster_consensus -> [ meta + [id: cluster_id], cluster_consensus ] }
+//         )
+        // combine into one file
     emit:
         most_abundant_by_cluster = most_abundant
         otu_table = otu_table

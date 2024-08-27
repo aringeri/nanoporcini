@@ -1,104 +1,126 @@
 process readCorrection {
-     memory { 7.GB }
-     container "quay.io/biocontainers/canu:2.2--ha47f30e_0"
+    memory { 7.GB }
+    container "quay.io/biocontainers/canu:2.2--ha47f30e_0"
 
-     input:
+    input:
         tuple val(meta), path(reads)
 
-     output:
+    output:
         tuple val(meta), path('corrected_reads.correctedReads.fasta'), emit: corrected_reads
 
-     script:
-     genomeSize=1000
-     minReadLength=400
-     stopOnLowCoverage=1
-     minInputCoverage=2
-     """
-     canu -correct -p corrected_reads -nanopore-raw \\
-        $reads genomeSize=${genomeSize} \\
-        stopOnLowCoverage=${stopOnLowCoverage} minInputCoverage=${minInputCoverage} \\
-        minReadLength=${minReadLength} minOverlapLength=200
+    script:
+    genomeSize=1000
+    minReadLength=400
+    stopOnLowCoverage=1
+    minInputCoverage=2
+    """
+    canu -correct -p corrected_reads -nanopore-raw \\
+    $reads genomeSize=${genomeSize} \\
+    stopOnLowCoverage=${stopOnLowCoverage} minInputCoverage=${minInputCoverage} \\
+    minReadLength=${minReadLength} minOverlapLength=200
 
-     gunzip corrected_reads.correctedReads.fasta.gz
-     """
- }
+    gunzip corrected_reads.correctedReads.fasta.gz
+    """
+}
 
-//  process draft_selection {
-//      publishDir "${params.outdir}/${barcode}/cluster${cluster_id}", mode: 'copy', pattern: 'draft_read.fasta'
-//      errorStrategy 'retry'
-//
-//      input:
-//      tuple val(barcode), val(cluster_id), file(cluster_log), file(reads) from corrected_reads
-//
-//      output:
-//      tuple val(barcode), val(cluster_id), file('*_draft.log'), file('draft_read.fasta'), file(reads) into draft
-//
-//      script:
-//      """
-//      split -l 2 $reads split_reads
-//      find split_reads* > read_list.txt
-//
-//      fastANI --ql read_list.txt --rl read_list.txt -o fastani_output.ani -t 48 -k 16 --fragLen 160
-//
-//      DRAFT=\$(awk 'NR>1{name[\$1] = \$1; arr[\$1] += \$3; count[\$1] += 1}  END{for (a in arr) {print arr[a] / count[a], name[a] }}' fastani_output.ani | sort -rg | cut -d " " -f2 | head -n1)
-//      cat \$DRAFT > draft_read.fasta
-//      ID=\$(head -n1 draft_read.fasta | sed 's/>//g')
-//      cat $cluster_log > ${cluster_id}_draft.log
-//      echo -n \$ID >> ${cluster_id}_draft.log
-//     """
-//  }
-//
-//  process racon_pass {
-//      memory { 7.GB * task.attempt }
-//      time { 1.hour * task.attempt }
-//      errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-//      maxRetries 3
-//
-//      input:
-//      tuple val(barcode), val(cluster_id), file(cluster_log), file(draft_read), file(corrected_reads) from draft
-//
-//      output:
-//      tuple val(barcode), val(cluster_id), file(cluster_log), file('racon_consensus.fasta'), file(corrected_reads), env(success) into racon_output
-//
-//      script:
-//      """
-//      success=1
-//      minimap2 -ax map-ont --no-long-join -r100 -a $draft_read $corrected_reads -o aligned.sam
-//      if racon --quality-threshold=9 -w 250 $corrected_reads aligned.sam $draft_read > racon_consensus.fasta ; then
-//         success=1
-//      else
-//         success=0
-//         cat $draft_read > racon_consensus.fasta
-//      fi
-//
-//      """
-//  }
-//
-//  process medaka_pass {
-//      memory { 7.GB * task.attempt }
-//      time { 1.hour * task.attempt }
-//      errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-//      maxRetries 3
-//
-//      publishDir "${params.outdir}/${barcode}/cluster${cluster_id}", mode: 'copy', pattern: 'consensus_medaka.fasta/consensus.fasta'
-//
-//      input:
-//      tuple val(barcode), val(cluster_id), file(cluster_log), file(draft), file(corrected_reads), val(success) from racon_output
-//
-//      output:
-//      tuple val(barcode), val(cluster_id), file(cluster_log), file('consensus_medaka.fasta/consensus.fasta') into final_consensus
-//
-//      script:
-//      if(success == "0"){
-//         log.warn """Sample $barcode : Racon correction for cluster $cluster_id failed due to not enough overlaps. Taking draft read as consensus"""
-//         racon_warnings.add("""Sample $barcode : Racon correction for cluster $cluster_id failed due to not enough overlaps. Taking draft read as consensus""")
-//      }
-//      """
-//      if medaka_consensus -i $corrected_reads -d $draft -o consensus_medaka.fasta -t 4 -m r941_min_high_g303 ; then
-//         echo "Command succeeded"
-//      else
-//         cat $draft > consensus_medaka.fasta
-//      fi
-//      """
-//
-//  }
+process draftSelection {
+    tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
+    container "quay.io/biocontainers/fastani:1.34--h4dfc31f_3"
+    label "med_cpu"
+    label "med_mem"
+
+    input:
+        tuple val(meta), path(reads_by_cluster_fasta_gz)
+
+    output:
+        tuple val(meta), path('reads_by_cluster.fasta'), path('*draft_read.fasta', arity: '1'), emit: draft
+        tuple val(meta), path('fastani_output.ani'), emit: fastani_output
+        tuple val(meta), path('*.log'), emit: logs
+
+    script:
+    """
+    gunzip -c $reads_by_cluster_fasta_gz > reads_by_cluster.fasta
+    split -l 2 reads_by_cluster.fasta split_reads
+    find split_reads* > read_list.txt
+
+    fastANI --ql read_list.txt --rl read_list.txt \\
+        -o fastani_output.ani \\
+        -t ${task.cpus} \\
+        -k 16 --fragLen 160 \\
+        2> fastani.log
+
+    DRAFT=\$(awk 'NR>0{name[\$1] = \$1; arr[\$1] += \$3; count[\$1] += 1}  END{for (a in arr) {print arr[a] / count[a], name[a] }}' fastani_output.ani | sort -rg | cut -d " " -f2 | head -n1)
+    cat \$DRAFT > cluster_${meta.cluster.id}_draft_read.fasta
+    """
+}
+
+process mapReadsToDraft {
+    tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
+    container "quay.io/biocontainers/minimap2:2.28--he4a0461_1"
+    label "small_cpu"
+    label "med_mem"
+
+    input:
+        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta)
+    output:
+        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta), path('*aligned.sam', arity: '1'), emit: aligned
+        tuple val(meta), path('*.log'), emit: logs
+
+    script:
+    """
+    minimap2 -t ${task.cpus} -ax map-ont \\
+        --no-long-join \\
+        -r100 -a $draft_read_fasta $reads_by_cluster_fasta \\
+        -o cluster_${meta.cluster.id}_aligned.sam \\
+        2> minimap.log
+    """
+}
+
+process raconConsensus {
+    tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
+    container "quay.io/biocontainers/racon:1.5.0--h21ec9f0_2"
+    label "large_mem"
+    label "small_cpu"
+
+    input:
+        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta), path(aligned_sam)
+
+    output:
+        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta), path('*racon_consensus.fasta', arity: '1'), emit: racon_output
+        tuple val(meta), path('*.log'), emit: logs
+
+    script:
+    """
+    success=1
+    racon -t ${task.cpus} \\
+        --quality-threshold=9 \\
+        -w 250 $reads_by_cluster_fasta $aligned_sam $draft_read_fasta \\
+        > cluster_${meta.cluster.id}_racon_consensus.fasta \\
+        2> racon.log
+    """
+}
+
+process medakaConsensus {
+    tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
+    container "docker.io/ontresearch/medaka:sha3486abaab0d3b90351617eb8622acf2028edb154"
+    label "large_mem"
+    label "small_cpu"
+
+    input:
+        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta), path(racon_consensus_fasta)
+
+    output:
+        tuple val(meta), path('*_medaka/consensus.fasta', arity: '1'), emit: consensus
+        tuple val(meta), path('*.log'), emit: logs
+
+    script:
+    def model="r1041_e82_400bps_sup_g615"
+    """
+    medaka_consensus -i $reads_by_cluster_fasta -d $racon_consensus_fasta \\
+        -o cluster_${meta.cluster.id}_medaka \\
+        -t ${task.cpus} \\
+        -m $model \\
+        > medaka.log
+    """
+
+}
