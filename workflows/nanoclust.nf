@@ -45,7 +45,8 @@ workflow nanoclust {
         draft = draftSelection(flat)
         aligned = mapReadsToDraft(draft.draft).aligned
         racon = raconConsensus(aligned).racon_output
-        medaka = medakaConsensus(racon).consensus
+        fmt_racon = removeReverseComplementTagFromSeqs(racon)
+        medaka = medakaConsensus(fmt_racon).consensus
 
         reps = medaka.map { meta, cluster_consensus -> [ meta.subMap('region', 'scenario'), cluster_consensus ] }
                 .groupTuple()
@@ -55,6 +56,28 @@ workflow nanoclust {
         most_abundant_by_cluster = most_abundant
         consensus_by_cluster = consensus
         otu_table = otu_table
+}
+
+process removeReverseComplementTagFromSeqs {
+    tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+                'https://depot.galaxyproject.org/singularity/seqkit:2.6.1--h9ee0642_0':
+                'biocontainers/seqkit:2.6.1--h9ee0642_0' }"
+    label "med_mem"
+    label "small_cpu"
+
+    input:
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path(racon_consensus_fasta), val(success)
+
+    output:
+        tuple val(meta), path('reads_by_cluster_no_rc.fastq'), path(draft_read_fastq), path(racon_consensus_fasta), val(success)
+
+    // Reverse complement ('rc') has been added to the ids of all reads after using cutadapt.
+    // This is causing issues in medaka, so trim these off for now
+    script:
+    """
+    seqkit replace -p '\\src' -r '' $reads_by_cluster_fastq -o reads_by_cluster_no_rc.fastq
+    """
 }
 
 process kmerFreq {
