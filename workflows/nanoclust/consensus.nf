@@ -26,7 +26,7 @@ process readCorrection {
 process draftSelection {
     tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
     container "quay.io/biocontainers/fastani:1.34--h4dfc31f_3"
-    label "med_cpu"
+    label "small_cpu"
     label "med_mem"
 
     input:
@@ -40,7 +40,7 @@ process draftSelection {
     script:
     """
     gunzip -c $reads_by_cluster_fastq_gz > reads_by_cluster.fastq
-    split -l 4 reads_by_cluster.fastq split_reads
+    split -l 4 -a 4 reads_by_cluster.fastq split_reads
     find split_reads* > read_list.txt
 
     fastANI --ql read_list.txt --rl read_list.txt \\
@@ -86,17 +86,23 @@ process raconConsensus {
         tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path(aligned_sam)
 
     output:
-        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path('*racon_consensus.fasta', arity: '1'), emit: racon_output
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path('*racon_consensus.fasta', arity: '1'), env(success), emit: racon_output
         tuple val(meta), path('*.log'), emit: logs
 
     script:
     """
-    success=1
-    racon -t ${task.cpus} \\
+    success=0
+    if racon -t ${task.cpus} \\
         --quality-threshold=9 \\
         -w 250 $reads_by_cluster_fastq $aligned_sam $draft_read_fastq \\
         > cluster_${meta.cluster.id}_racon_consensus.fasta \\
-        2> racon.log
+        2> racon.log ; then
+        success=1
+    else
+        cat $draft_read_fastq \\
+            | head -n 2 \\
+            | sed '1 s/^@/>/' > cluster_${meta.cluster.id}_racon_consensus.fasta
+    fi
     """
 }
 
@@ -107,7 +113,7 @@ process medakaConsensus {
     label "small_cpu"
 
     input:
-        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path(racon_consensus_fasta)
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path(racon_consensus_fasta), val(success)
 
     output:
         tuple val(meta), path('*_medaka/consensus.fasta', arity: '1'), emit: consensus
@@ -115,6 +121,9 @@ process medakaConsensus {
 
     script:
     def model="r1041_e82_400bps_sup_g615"
+    if (success == "0") {
+        log.warn """Racon correction for cluster ${meta.cluster.id} failed due to not enough overlaps. Taking draft read as consensus"""
+    }
     """
     medaka_consensus -i $reads_by_cluster_fastq -d $racon_consensus_fasta \\
         -o cluster_${meta.cluster.id}_medaka \\
