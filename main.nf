@@ -54,6 +54,7 @@ include { subsample } from './workflows/subsample'
 include {
     assignTaxDnabarcoder
     assignTaxDnabarcoder as assignTaxDnabarcoder_vsearch
+    assignTaxDnabarcoder as assignTaxDnabarcoder_consensus
 } from './workflows/assign_tax_dnabarcoder'
 
 include { PrepUniteDBForQiime } from "./workflows/qiime_prep_db"
@@ -162,11 +163,19 @@ workflow {
             ).merged_reads
         nanoclust_result = nanoclust(pooled_nanoclust)
 
-        most_abundant = nanoclust_result.most_abundant_by_cluster
-            .map { meta, reads ->
-                [ meta + [cluster_method: "nanoclust"], reads ]
-            }
-        assignTaxDnabarcoder(most_abundant)
+        assignTaxDnabarcoder(
+            nanoclust_result.most_abundant_by_cluster
+                .map { meta, reads ->
+                    [ meta + [cluster_method: "nanoclust_abundant"], reads ]
+                }
+        )
+
+        assignTaxDnabarcoder_consensus(
+            nanoclust_result.consensus_by_cluster
+                .map { meta, reads ->
+                    [ meta + [cluster_method: "nanoclust_consensus"], reads ]
+                }
+        )
     }
 
     if ('vsearch' in params.cluster.methods) {

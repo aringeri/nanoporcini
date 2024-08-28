@@ -42,19 +42,18 @@ workflow nanoclust {
             }
             .filter { meta, cluster -> meta.cluster.id != "-1" }
 
-        draft = draftSelection(SEQKIT_FQ2FA(flat))
+        draft = draftSelection(flat)
         aligned = mapReadsToDraft(draft.draft).aligned
         racon = raconConsensus(aligned).racon_output
         medaka = medakaConsensus(racon).consensus
 
-//         reps = FASTQ_CONCAT(
-//             medaka.map { meta, cluster_consensus -> [ meta.subMap('region', 'scenario'), meta.cluster.id, cluster_consensus ] }
-//                 .groupTuple()
-//                 .map { meta, cluster_id, cluster_consensus -> [ meta + [id: cluster_id], cluster_consensus ] }
-//         )
-        // combine into one file
+        reps = medaka.map { meta, cluster_consensus -> [ meta.subMap('region', 'scenario'), cluster_consensus ] }
+                .groupTuple()
+                .map { meta, cluster_consensus -> [ meta + [id: "${meta.scenario.count}/${meta.scenario.rep}"], cluster_consensus ] }
+        consensus = concatConsensusSeqs(reps)
     emit:
         most_abundant_by_cluster = most_abundant
+        consensus_by_cluster = consensus
         otu_table = otu_table
 }
 
@@ -275,5 +274,28 @@ process gatherMinClusterSizeStats {
     props = np.linspace(0, 0.03, 201)
     df = gather_cluster_stats(X, props)
     df.to_csv('min_cluster_size_stats.tsv', sep='\t', index=False)
+    """
+}
+
+process concatConsensusSeqs {
+    tag "${meta.id} - ${meta.region}"
+    label 'large_mem'
+
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://containers.biocontainers.pro/s3/SingImgsRepo/biocontainers/v1.2.0_cv1/biocontainers_v1.2.0_cv1.img' :
+        'docker.io/biocontainers/biocontainers:v1.2.0_cv1' }"
+
+    input:
+        tuple val(meta), path(input_files, name: "*.fasta", stageAs: "dir/*.fasta")
+
+    output:
+        tuple val(meta), path( "consensus_sequences.fasta" ), emit: merged
+
+    script:
+
+    def input_files = "$input_files".tokenize()
+
+    """
+    cat dir/*.fasta > consensus_sequences.fasta
     """
 }

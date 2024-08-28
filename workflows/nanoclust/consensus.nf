@@ -30,17 +30,17 @@ process draftSelection {
     label "med_mem"
 
     input:
-        tuple val(meta), path(reads_by_cluster_fasta_gz)
+        tuple val(meta), path(reads_by_cluster_fastq_gz)
 
     output:
-        tuple val(meta), path('reads_by_cluster.fasta'), path('*draft_read.fasta', arity: '1'), emit: draft
+        tuple val(meta), path('reads_by_cluster.fastq'), path('*draft_read.fastq', arity: '1'), emit: draft
         tuple val(meta), path('fastani_output.ani'), emit: fastani_output
         tuple val(meta), path('*.log'), emit: logs
 
     script:
     """
-    gunzip -c $reads_by_cluster_fasta_gz > reads_by_cluster.fasta
-    split -l 2 reads_by_cluster.fasta split_reads
+    gunzip -c $reads_by_cluster_fastq_gz > reads_by_cluster.fastq
+    split -l 4 reads_by_cluster.fastq split_reads
     find split_reads* > read_list.txt
 
     fastANI --ql read_list.txt --rl read_list.txt \\
@@ -50,7 +50,7 @@ process draftSelection {
         2> fastani.log
 
     DRAFT=\$(awk 'NR>0{name[\$1] = \$1; arr[\$1] += \$3; count[\$1] += 1}  END{for (a in arr) {print arr[a] / count[a], name[a] }}' fastani_output.ani | sort -rg | cut -d " " -f2 | head -n1)
-    cat \$DRAFT > cluster_${meta.cluster.id}_draft_read.fasta
+    cat \$DRAFT > cluster_${meta.cluster.id}_draft_read.fastq
     """
 }
 
@@ -61,16 +61,16 @@ process mapReadsToDraft {
     label "med_mem"
 
     input:
-        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta)
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq)
     output:
-        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta), path('*aligned.sam', arity: '1'), emit: aligned
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path('*aligned.sam', arity: '1'), emit: aligned
         tuple val(meta), path('*.log'), emit: logs
 
     script:
     """
     minimap2 -t ${task.cpus} -ax map-ont \\
         --no-long-join \\
-        -r100 -a $draft_read_fasta $reads_by_cluster_fasta \\
+        -r100 -a $draft_read_fastq $reads_by_cluster_fastq \\
         -o cluster_${meta.cluster.id}_aligned.sam \\
         2> minimap.log
     """
@@ -83,10 +83,10 @@ process raconConsensus {
     label "small_cpu"
 
     input:
-        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta), path(aligned_sam)
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path(aligned_sam)
 
     output:
-        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta), path('*racon_consensus.fasta', arity: '1'), emit: racon_output
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path('*racon_consensus.fasta', arity: '1'), emit: racon_output
         tuple val(meta), path('*.log'), emit: logs
 
     script:
@@ -94,7 +94,7 @@ process raconConsensus {
     success=1
     racon -t ${task.cpus} \\
         --quality-threshold=9 \\
-        -w 250 $reads_by_cluster_fasta $aligned_sam $draft_read_fasta \\
+        -w 250 $reads_by_cluster_fastq $aligned_sam $draft_read_fastq \\
         > cluster_${meta.cluster.id}_racon_consensus.fasta \\
         2> racon.log
     """
@@ -107,7 +107,7 @@ process medakaConsensus {
     label "small_cpu"
 
     input:
-        tuple val(meta), path(reads_by_cluster_fasta), path(draft_read_fasta), path(racon_consensus_fasta)
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path(racon_consensus_fasta)
 
     output:
         tuple val(meta), path('*_medaka/consensus.fasta', arity: '1'), emit: consensus
@@ -116,7 +116,7 @@ process medakaConsensus {
     script:
     def model="r1041_e82_400bps_sup_g615"
     """
-    medaka_consensus -i $reads_by_cluster_fasta -d $racon_consensus_fasta \\
+    medaka_consensus -i $reads_by_cluster_fastq -d $racon_consensus_fasta \\
         -o cluster_${meta.cluster.id}_medaka \\
         -t ${task.cpus} \\
         -m $model \\
