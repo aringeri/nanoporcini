@@ -96,7 +96,7 @@ process raconConsensus {
             --quality-threshold=9 \\
             -w 250 $reads_by_cluster_fastq $aligned_sam $draft_read_fastq \\
             > cluster_${meta.cluster.id}_racon_consensus.fasta \\
-            2> racon.log) \\
+            2> racon.log) -eq 0 \\
             && -s cluster_${meta.cluster.id}_racon_consensus.fasta ]]; then
         success=1
     else
