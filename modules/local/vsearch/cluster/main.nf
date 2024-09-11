@@ -20,7 +20,7 @@ process VSEARCH_CLUSTER {
         tuple val(meta), path('*.uc.tsv.gz')             , optional: true, emit: uc
         tuple val(meta), path('*.centroids.fasta.gz')    , optional: true, emit: centroids
         tuple val(meta), path('*.consensus.fasta.gz')    , optional: true, emit: consensus
-        tuple val(meta), path('*.clusters.fasta*.gz')    , optional: true, emit: clusters
+        tuple val(meta), path('*.cluster_*.fasta*.gz')   , optional: true, emit: clusters
         tuple val(meta), path('*.profile.txt.gz')        , optional: true, emit: profile
         tuple val(meta), path('*.msa.fasta.gz')          , optional: true, emit: msa
         tuple val(meta), path('*.log')                   , optional: true, emit: log
@@ -40,7 +40,7 @@ process VSEARCH_CLUSTER {
                     "--biomout" : "biom" ,
                     "--blast6out" : "blast.tsv" ,
                     "--centroids" : "centroids.fasta" ,
-                    "--clusters" : "clusters.fasta" ,
+                    "--clusters" : "cluster_" ,
                     "--consout" : "consensus.fasta" ,
                     "--mothur_shared_out" : "mothur.tsv" ,
                     "--msaout" : "msa.fasta" ,
@@ -49,12 +49,17 @@ process VSEARCH_CLUSTER {
                     "--uc" : "uc.tsv" ,
                     "--userout" : "out.tsv"]
 
-    outputs = args3.tokenize().collect { 
-            ext = ext_map[(it)]
+    outputs = args3.tokenize().collect { opt ->
+            ext = ext_map[opt]
             if (ext == null) {
-                error "Unknown output file format provided (${it})"
+                error "Unknown output file format provided (${opt})"
             }
-            "${it} ${prefix}.${ext}"
+            if (opt == "--clusters") {
+                "${opt} cluster_"
+            } else {
+                "${opt} ${prefix}.${ext}"
+            }
+
         }.join(" ")
 
     """
@@ -63,6 +68,11 @@ process VSEARCH_CLUSTER {
         $outputs \\
         --threads $task.cpus \\
         $args
+
+    for f in cluster_*;
+    do
+        mv "\$f" "${prefix}.\$f.fasta"
+    done
 
 
     gzip -n ${prefix}.*

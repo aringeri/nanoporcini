@@ -1,3 +1,25 @@
+workflow nanoclust_consensus {
+    take:
+        // one file per cluster, per repetition, per sample
+        // expecting meta map to contain 'cluster.id' property
+        reads_by_cluster_fastq_gz // Channel<(Map<cluster_id>, Reads_FQ_GZ)>
+
+    main:
+        draft = draftSelection(reads_by_cluster_fastq_gz)
+        aligned = mapReadsToDraft(draft.draft).aligned
+        racon = raconConsensus(aligned).racon_output
+        fmt_racon = removeReverseComplementTagFromSeqs(racon)
+        medaka = medakaConsensus(fmt_racon).consensus
+
+        reps = medaka.map { meta, cluster_consensus -> [ meta.subMap('region', 'scenario', 'cluster_method', 'umap_min_cluster_size'), cluster_consensus ] }
+                .groupTuple()
+                .map { meta, cluster_consensus -> [ meta + [id: "${meta.scenario.count}/${meta.scenario.rep}"], cluster_consensus ] }
+        consensus = concatConsensusSeqs(reps)
+
+    emit:
+        consensus = consensus
+}
+
 process readCorrection {
     memory { 7.GB }
     container "quay.io/biocontainers/canu:2.2--ha47f30e_0"
@@ -24,7 +46,7 @@ process readCorrection {
 }
 
 process draftSelection {
-    tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
+    tag "${meta.scenario.count}/${meta.scenario.rep} - ${meta.umap_min_cluster_size} - Cluster ${meta.cluster.id}"
     container "quay.io/biocontainers/fastani:1.34--h4dfc31f_3"
     label "small_cpu"
     label "med_mem"
@@ -133,4 +155,49 @@ process medakaConsensus {
         > medaka.log
     """
 
+}
+
+process removeReverseComplementTagFromSeqs {
+    tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+                'https://depot.galaxyproject.org/singularity/seqkit:2.6.1--h9ee0642_0':
+                'biocontainers/seqkit:2.6.1--h9ee0642_0' }"
+    label "med_mem"
+    label "small_cpu"
+
+    input:
+        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path(racon_consensus_fasta), val(success)
+
+    output:
+        tuple val(meta), path('reads_by_cluster_no_rc.fastq'), path(draft_read_fastq), path(racon_consensus_fasta), val(success)
+
+    // Reverse complement ('rc') has been added to the ids of all reads after using cutadapt.
+    // This is causing issues in medaka, so trim these off for now
+    script:
+    """
+    seqkit replace -p '\\src' -r '' $reads_by_cluster_fastq -o reads_by_cluster_no_rc.fastq
+    """
+}
+
+process concatConsensusSeqs {
+    tag "${meta.id} - ${meta.region}"
+    label 'large_mem'
+
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://containers.biocontainers.pro/s3/SingImgsRepo/biocontainers/v1.2.0_cv1/biocontainers_v1.2.0_cv1.img' :
+        'docker.io/biocontainers/biocontainers:v1.2.0_cv1' }"
+
+    input:
+        tuple val(meta), path(input_files, name: "*.fasta", stageAs: "dir/*.fasta")
+
+    output:
+        tuple val(meta), path( "consensus_sequences.fasta" ), emit: merged
+
+    script:
+
+    def input_files = "$input_files".tokenize()
+
+    """
+    cat dir/*.fasta > consensus_sequences.fasta
+    """
 }

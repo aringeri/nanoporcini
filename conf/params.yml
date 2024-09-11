@@ -45,8 +45,9 @@ cluster:
   methods:
     - vsearch
     - nanoclust
-  nanoclust:
-    min_cluster_props: [0.1, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005]
+  hdbscan:
+    min_cluster_props: [0, 0.001, 0.0025, 0.005, 0.0065]
+  gather_min_cluster_size_stats: false
 
 
 taxonomic_assignment:

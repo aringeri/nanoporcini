@@ -2,33 +2,36 @@ import java.util.stream.Collectors
 import java.util.stream.Stream
 
 include { UnGzip } from '../workflows/classify'
-include {
-    readCorrection
-    draftSelection
-    mapReadsToDraft
-    raconConsensus
-    medakaConsensus
-} from './nanoclust/consensus'
+include { nanoclust_consensus } from './nanoclust/consensus'
 include { SEQKIT_FQ2FA } from '../modules/local/seqkit/fq2fa'
-// include { FASTQ_CONCAT } from '../modules/local/fastq_concat'
 
 workflow nanoclust {
     take:
         sample_reads // Channel<Map, Fastq.GZ> one per repetition, per sample
 
     main:
-        min_cluster_props = Channel.fromList(params.cluster.nanoclust.min_cluster_props)
+        min_cluster_sizes = Channel.fromList(params.cluster.hdbscan.min_cluster_props)
 
         umap = UnGzip(sample_reads)
             | kmerFreq
             | umapTransform
 
-        gatherMinClusterSizeStats(umap)
+        if (params.cluster.gather_min_cluster_size_stats) {
+            gatherMinClusterSizeStats(umap)
+        }
 
-        clusters = hdbscanCluster(umap)
+        // repeat for each min cluster size
+        umap_by_size = umap.combine(min_cluster_sizes).map { meta, umap_tsv, min_cluster_size ->
+            [meta + [ umap_min_cluster_size: min_cluster_size ], umap_tsv, min_cluster_size]
+        }
+        clusters = hdbscanCluster(umap_by_size)
 
         otu_table = createOtuTable(clusters)
-        reads_by_cluster = splitReadsByCluster(clusters.join(sample_reads)).reads_by_cluster_fastq_gz
+
+        // gather reads for each clustering (considering multiple min cluster size thresholds)
+        reads_and_clusters = sample_reads.cross(clusters){ meta, data -> meta.subMap('region', 'scenario') }
+            .map{ read_ch, cluster_ch -> [ cluster_ch[0] /* meta from cluster */, read_ch[1] /* sample reads*/, cluster_ch[1] /* cluster data */] }
+        reads_by_cluster = splitReadsByCluster(reads_and_clusters).reads_by_cluster_fastq_gz
         most_abundant = findMostAbundantSeqsInCluster(reads_by_cluster)
 
         flat = reads_by_cluster
@@ -41,43 +44,13 @@ workflow nanoclust {
                 ].transpose()
             }
             .filter { meta, cluster -> meta.cluster.id != "-1" }
+            .map { meta, reads -> [ meta + [cluster_method: 'nanoclust_consensus'], reads ] }
 
-        draft = draftSelection(flat)
-        aligned = mapReadsToDraft(draft.draft).aligned
-        racon = raconConsensus(aligned).racon_output
-        fmt_racon = removeReverseComplementTagFromSeqs(racon)
-        medaka = medakaConsensus(fmt_racon).consensus
-
-        reps = medaka.map { meta, cluster_consensus -> [ meta.subMap('region', 'scenario'), cluster_consensus ] }
-                .groupTuple()
-                .map { meta, cluster_consensus -> [ meta + [id: "${meta.scenario.count}/${meta.scenario.rep}"], cluster_consensus ] }
-        consensus = concatConsensusSeqs(reps)
+        consensus = nanoclust_consensus(flat)
     emit:
         most_abundant_by_cluster = most_abundant
         consensus_by_cluster = consensus
         otu_table = otu_table
-}
-
-process removeReverseComplementTagFromSeqs {
-    tag "${meta.scenario.count}/${meta.scenario.rep} - Cluster ${meta.cluster.id}"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-                'https://depot.galaxyproject.org/singularity/seqkit:2.6.1--h9ee0642_0':
-                'biocontainers/seqkit:2.6.1--h9ee0642_0' }"
-    label "med_mem"
-    label "small_cpu"
-
-    input:
-        tuple val(meta), path(reads_by_cluster_fastq), path(draft_read_fastq), path(racon_consensus_fasta), val(success)
-
-    output:
-        tuple val(meta), path('reads_by_cluster_no_rc.fastq'), path(draft_read_fastq), path(racon_consensus_fasta), val(success)
-
-    // Reverse complement ('rc') has been added to the ids of all reads after using cutadapt.
-    // This is causing issues in medaka, so trim these off for now
-    script:
-    """
-    seqkit replace -p '\\src' -r '' $reads_by_cluster_fastq -o reads_by_cluster_no_rc.fastq
-    """
 }
 
 process kmerFreq {
@@ -116,18 +89,17 @@ process umapTransform {
 }
 
 process hdbscanCluster {
-    tag "${meta.scenario.count}/${meta.scenario.rep}"
+    tag "${meta.scenario.count}/${meta.scenario.rep} - ${min_cluster_size_prop}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
     label 'mega_mem'
     label 'large_cpu'
 
     input:
-        tuple val(meta), path(umap_tsv)
+        tuple val(meta), path(umap_tsv), val(min_cluster_size_prop)
     output:
         tuple val(meta), path("*.tsv"), emit: clusters
 
     script:
-    def min_cluster_size_prop=0.005
     """
     #!/usr/bin/env python
 
@@ -148,7 +120,7 @@ process hdbscanCluster {
 }
 
 process createOtuTable {
-    tag "${meta.scenario.count}/${meta.scenario.rep}"
+    tag "${meta.scenario.count}/${meta.scenario.rep} - ${meta.umap_min_cluster_size}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
     label "small_mem"
 
@@ -181,7 +153,7 @@ process createOtuTable {
 }
 
 process splitReadsByCluster {
-    tag "${meta.scenario.count}/${meta.scenario.rep}"
+    tag "${meta.scenario.count}/${meta.scenario.rep} - ${meta.umap_min_cluster_size}"
     label 'small_mem'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -189,12 +161,15 @@ process splitReadsByCluster {
             'biocontainers/seqkit:2.6.1--h9ee0642_0' }"
 
     input:
-        tuple val(meta), path(clusters_tsv), path(reads)
+        tuple val(meta), path(reads), path(clusters_tsv)
     output:
         tuple val(meta), path("*.fastq.gz"), emit: reads_by_cluster_fastq_gz
         tuple val(meta), path("*.txt"), emit: reads_ids_by_cluster
 
     script:
+    if (!"$clusters_tsv".endsWith(".tsv")) {
+        error "Expecting input to be a '.tsv' file: $clusters_tsv"
+    }
     // assuming read id ends with ';'
     // will add ';cluster={cluster_id};' details to reads
     """
@@ -214,7 +189,7 @@ process splitReadsByCluster {
 }
 
 process findMostAbundantSeqsInCluster {
-    tag "${meta.scenario.count}/${meta.scenario.rep}"
+    tag "${meta.scenario.count}/${meta.scenario.rep} - ${meta.umap_min_cluster_size}"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/vsearch:2.21.1--h95f258a_0':
         'biocontainers/vsearch:2.21.1--h95f258a_0' }"
@@ -297,28 +272,5 @@ process gatherMinClusterSizeStats {
     props = np.linspace(0, 0.03, 201)
     df = gather_cluster_stats(X, props)
     df.to_csv('min_cluster_size_stats.tsv', sep='\t', index=False)
-    """
-}
-
-process concatConsensusSeqs {
-    tag "${meta.id} - ${meta.region}"
-    label 'large_mem'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://containers.biocontainers.pro/s3/SingImgsRepo/biocontainers/v1.2.0_cv1/biocontainers_v1.2.0_cv1.img' :
-        'docker.io/biocontainers/biocontainers:v1.2.0_cv1' }"
-
-    input:
-        tuple val(meta), path(input_files, name: "*.fasta", stageAs: "dir/*.fasta")
-
-    output:
-        tuple val(meta), path( "consensus_sequences.fasta" ), emit: merged
-
-    script:
-
-    def input_files = "$input_files".tokenize()
-
-    """
-    cat dir/*.fasta > consensus_sequences.fasta
     """
 }

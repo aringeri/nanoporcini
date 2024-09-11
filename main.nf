@@ -42,6 +42,7 @@ include {
 } from './modules/local/fastq_concat'
 
 include { nanoclust } from './workflows/nanoclust'
+include { nanoclust_consensus } from './workflows/nanoclust/consensus'
 include { VSEARCH_DEREPLICATE } from './modules/local/vsearch/dereplicate'
 
 include { VSEARCH_CLUSTER } from './modules/local/vsearch/cluster'
@@ -54,6 +55,7 @@ include { subsample } from './workflows/subsample'
 include {
     assignTaxDnabarcoder
     assignTaxDnabarcoder as assignTaxDnabarcoder_vsearch
+    assignTaxDnabarcoder as assignTaxDnabarcoder_vsearch_consensus
     assignTaxDnabarcoder as assignTaxDnabarcoder_consensus
 } from './workflows/assign_tax_dnabarcoder'
 
@@ -172,9 +174,6 @@ workflow {
 
         assignTaxDnabarcoder_consensus(
             nanoclust_result.consensus_by_cluster
-                .map { meta, reads ->
-                    [ meta + [cluster_method: "nanoclust_consensus"], reads ]
-                }
         )
     }
 
@@ -195,6 +194,19 @@ workflow {
         cluster.centroids.map { meta, reads ->
             [ meta + [cluster_method: 'vsearch'], reads ]
         } | assignTaxDnabarcoder_vsearch
+
+        vsearch_consensus = cluster.clusters
+            .flatMap { meta, clusters ->
+                [  clusters.collect { cluster_fname ->
+                      (full,id)=(cluster_fname.getName() =~ /cluster_(\-?\d+)/)[0]
+                      meta + [ cluster : [ id: id ] ]
+                   },
+                    clusters
+                ].transpose()
+            }.map { meta, reads -> [ meta + [cluster_method: 'vsearch_consensus'], reads ] }
+            | nanoclust_consensus
+
+        vsearch_consensus | assignTaxDnabarcoder_vsearch_consensus
     }
 
     if (params.taxonomic_assignment.enabled) {
