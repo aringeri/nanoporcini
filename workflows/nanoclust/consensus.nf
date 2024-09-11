@@ -60,8 +60,9 @@ process draftSelection {
         tuple val(meta), path('*.log'), emit: logs
 
     script:
+    def num_polishing_reads=params.consensus.num_polishing_reads
     """
-    gunzip -c $reads_by_cluster_fastq_gz > reads_by_cluster.fastq
+    gunzip -c $reads_by_cluster_fastq_gz | head -n \$(($num_polishing_reads*4)) > reads_by_cluster.fastq
     split -l 4 -a 4 reads_by_cluster.fastq split_reads
     find split_reads* > read_list.txt
 

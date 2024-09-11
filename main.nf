@@ -144,7 +144,7 @@ workflow {
         .map { meta, fasta ->
             def db = (meta.region == 'LSU')
                     ? "$baseDir/data/db/RDP-LSU/rdp_train.LSU.dada2.fasta.gz"
-                    : params.unite_db
+                    : params.chimera_filtering.ref_db
             [meta, fasta, db]
         }
         | VSEARCH_UCHIME_REF

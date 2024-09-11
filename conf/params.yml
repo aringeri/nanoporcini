@@ -25,6 +25,8 @@ region:
   LSU:
     classifier: "dada2"
     rdp_trained_model_dir: "$baseDir/data/db/RDP-LSU/RDPClassifier_fungiLSU_trainsetNo11_trained/"
+chimera_filtering:
+  ref_db: "${baseDir}/data/db/unite2024/unite2024ITS.fasta"
 subsample:
   enabled: true
   scenarios:
@@ -48,8 +50,8 @@ cluster:
   hdbscan:
     min_cluster_props: [0, 0.001, 0.0025, 0.005, 0.0065]
   gather_min_cluster_size_stats: false
-
-
+consensus:
+  num_polishing_reads: 200
 taxonomic_assignment:
   enabled: false
   dnabarcoder:
