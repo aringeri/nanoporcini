@@ -1,5 +1,7 @@
 process CHOPPER {
     tag "$meta.id - $meta.region"
+    label "med_cpu"
+    label "med_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/chopper:0.7.0--hdcf5f25_0' :

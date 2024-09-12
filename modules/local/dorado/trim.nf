@@ -1,5 +1,7 @@
 process dorado_trim_adapters {
     tag "$meta.id - $meta.region"
+    label "small_cpu"
+    label "med_mem"
 
     input:
         tuple val(meta), path(untrimmed)

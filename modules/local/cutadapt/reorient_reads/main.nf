@@ -1,5 +1,7 @@
 process CUTADAPT_REORIENT_READS {
     tag "$meta.id"
+    label "med_cpu"
+    label "large_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/cutadapt:4.6--py39hf95cd2a_1' :
@@ -9,8 +11,8 @@ process CUTADAPT_REORIENT_READS {
         tuple val(meta), path(fastq)
     output:
         tuple val(meta), path("*.reoriented.fastq.gz"), emit: reads
-        tuple val(meta), path("*.unmatched.fastq.gz"), emit: unmatched
-        tuple val(meta), path("*.partial-match.fastq.gz"), emit: partial
+//         tuple val(meta), path("*.unmatched.fastq.gz"), emit: unmatched
+//         tuple val(meta), path("*.partial-match.fastq.gz"), emit: partial
         tuple val(meta), path("cutadapt.log"), emit: log
     
 
@@ -32,18 +34,18 @@ process CUTADAPT_REORIENT_READS {
             $fastq \\
             > cutadapt.log
 
-        echo 'Searching for partial matches:' >> cutadapt.log
+        #echo 'Searching for partial matches:' >> cutadapt.log
 
-        cutadapt \\
-            -g '$fwd_primer' \\
-            -a '$rev_primer_rc' \\
-            --action=$action \\
-            --revcomp \\
-            --times 4 \\
-            --cores=$task.cpus \\
-            -o ${prefix}.partial-match.fastq.gz \\
-            --untrimmed-output ${prefix}.unmatched.fastq.gz \\
-            ${prefix}.nomatch.fastq.gz \\
-            >> cutadapt.log
+        #cutadapt \\
+        #    -g '$fwd_primer' \\
+        #    -a '$rev_primer_rc' \\
+        #    --action=$action \\
+        #    --revcomp \\
+        #    --times 4 \\
+        #    --cores=$task.cpus \\
+        #    -o ${prefix}.partial-match.fastq.gz \\
+        #    --untrimmed-output ${prefix}.unmatched.fastq.gz \\
+        #    ${prefix}.nomatch.fastq.gz \\
+        #    >> cutadapt.log
         """
 }
