@@ -87,7 +87,7 @@ process nanoplot_bulk {
 process nanoplot {
     tag "$meta.stage $meta.id"
     label "small_cpu"
-    label "small_mem"
+    label "med_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/nanoplot:1.41.6--pyhdfd78af_0' :
