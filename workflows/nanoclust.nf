@@ -34,19 +34,23 @@ workflow nanoclust {
         reads_by_cluster = splitReadsByCluster(reads_and_clusters).reads_by_cluster_fastq_gz
         most_abundant = findMostAbundantSeqsInCluster(reads_by_cluster)
 
-        flat = reads_by_cluster
-            .flatMap { meta, clusters ->
-                [  clusters.collect { cluster_fname ->
-                      (full,id)=(cluster_fname.getName() =~ /cluster_(\-?\d+)_/)[0]
-                      meta + [ cluster : [ id: id ] ]
-                   },
-                    clusters
-                ].transpose()
-            }
-            .filter { meta, cluster -> meta.cluster.id != "-1" }
-            .map { meta, reads -> [ meta + [cluster_method: 'nanoclust_consensus'], reads ] }
+        if ('nanoclust' in params.consensus.methods) {
+            flat = reads_by_cluster
+                .flatMap { meta, clusters ->
+                    [  clusters.collect { cluster_fname ->
+                          (full,id)=(cluster_fname.getName() =~ /cluster_(\-?\d+)_/)[0]
+                          meta + [ cluster : [ id: id ] ]
+                       },
+                        clusters
+                    ].transpose()
+                }
+                .filter { meta, cluster -> meta.cluster.id != "-1" }
+                .map { meta, reads -> [ meta + [cluster_method: 'nanoclust_consensus'], reads ] }
 
-        consensus = nanoclust_consensus(flat)
+            consensus = nanoclust_consensus(flat)
+        } else {
+            consensus = channel.empty()
+        }
     emit:
         most_abundant_by_cluster = most_abundant
         consensus_by_cluster = consensus
