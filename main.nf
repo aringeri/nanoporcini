@@ -50,7 +50,6 @@ include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
 include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
 include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
 
-include { seqtk_sample } from './modules/local/seqtk/seqtk'
 include { subsample } from './workflows/subsample'
 include {
     assignTaxDnabarcoder

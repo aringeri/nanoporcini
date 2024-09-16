@@ -20,7 +20,7 @@ process seqtk_sample {
     seqtk sample \\
         -s ${meta.scenario.seed} \\
         $fastx \\
-        ${meta.scenario.count} \\
+        ${meta.seqtk_sample_depth} \\
         | gzip > ${prefix}.subsampled.fastq.gz
 
     echo "${meta.scenario.seed}" > seed.txt
