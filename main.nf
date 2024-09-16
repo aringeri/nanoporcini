@@ -171,9 +171,11 @@ workflow {
                 }
         )
 
-        assignTaxDnabarcoder_consensus(
-            nanoclust_result.consensus_by_cluster
-        )
+        if ('nanoclust' in params.consensus.methods) {
+            assignTaxDnabarcoder_consensus(
+                nanoclust_result.consensus_by_cluster
+            )
+        }
     }
 
     if ('vsearch' in params.cluster.methods) {
@@ -194,18 +196,20 @@ workflow {
             [ meta + [cluster_method: 'vsearch'], reads ]
         } | assignTaxDnabarcoder_vsearch
 
-        vsearch_consensus = cluster.clusters
-            .flatMap { meta, clusters ->
-                [  clusters.collect { cluster_fname ->
-                      (full,id)=(cluster_fname.getName() =~ /cluster_(\-?\d+)/)[0]
-                      meta + [ cluster : [ id: id ] ]
-                   },
-                    clusters
-                ].transpose()
-            }.map { meta, reads -> [ meta + [cluster_method: 'vsearch_consensus'], reads ] }
-            | nanoclust_consensus
+        if ('vsearch' in params.consensus.methods) {
+            vsearch_consensus = cluster.clusters
+                .flatMap { meta, clusters ->
+                    [  clusters.collect { cluster_fname ->
+                          (full,id)=(cluster_fname.getName() =~ /cluster_(\-?\d+)/)[0]
+                          meta + [ cluster : [ id: id ] ]
+                       },
+                        clusters
+                    ].transpose()
+                }.map { meta, reads -> [ meta + [cluster_method: 'vsearch_consensus'], reads ] }
+                | nanoclust_consensus
 
-        vsearch_consensus | assignTaxDnabarcoder_vsearch_consensus
+            vsearch_consensus | assignTaxDnabarcoder_vsearch_consensus
+        }
     }
 
     if (params.taxonomic_assignment.enabled) {

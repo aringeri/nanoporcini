@@ -56,6 +56,7 @@ cluster:
   gather_min_cluster_size_stats: false
 consensus:
   num_polishing_reads: 200
+  methods: ['nanoclust']
 taxonomic_assignment:
   enabled: false
   dnabarcoder:
