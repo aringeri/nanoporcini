@@ -44,8 +44,6 @@ subsample:
           prop: 0.4
         '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
           prop: 0.5
-        '20221208.Rep1_Run2_ITS_Fungal_database.Aspergillus_fumigatus.BC43':
-          prop: 0.5
     - count: 2000
       seed: 4
       mixin:
@@ -58,8 +56,6 @@ subsample:
         '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
           prop: 0.4
         '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
-          prop: 0.5
-        '20221208.Rep1_Run2_ITS_Fungal_database.Aspergillus_fumigatus.BC43':
           prop: 0.5
   repetitions: 5
 cluster:
