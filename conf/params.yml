@@ -46,6 +46,21 @@ subsample:
           prop: 0.5
         '20221208.Rep1_Run2_ITS_Fungal_database.Aspergillus_fumigatus.BC43':
           prop: 0.5
+    - count: 2000
+      seed: 4
+      mixin:
+        '20221208.Rep1_Run2_ITS_Fungal_database.Trichomonascus_ciferrii.BC77':
+          prop: 0.05
+        '20221208.Rep1_Run2_ITS_Fungal_database.Erysiphe_necator.BC35':
+          prop: 0.1
+        '20221208.Rep1_Run2_ITS_Fungal_database.Eutypa_lata.BC39':
+          prop: 0.2
+        '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
+          prop: 0.4
+        '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
+          prop: 0.5
+        '20221208.Rep1_Run2_ITS_Fungal_database.Aspergillus_fumigatus.BC43':
+          prop: 0.5
   repetitions: 5
 cluster:
   methods:
