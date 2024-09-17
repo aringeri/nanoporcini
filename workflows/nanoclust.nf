@@ -273,7 +273,7 @@ process gatherMinClusterSizeStats {
     umap_out = pd.read_csv("$umap_tsv", delimiter="\t")
     X = umap_out.loc[:, ["D1", "D2"]]
 
-    props = np.linspace(0, 0.03, 201)
+    props = np.linspace(0, 0.02, 101)
     df = gather_cluster_stats(X, props)
     df.to_csv('min_cluster_size_stats.tsv', sep='\t', index=False)
     """
