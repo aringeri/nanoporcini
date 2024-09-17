@@ -31,6 +31,32 @@ subsample:
   enabled: true
   type: uneven
   scenarios:
+    - count: 100
+      seed: 93
+      mixin:
+        '20221208.Rep1_Run2_ITS_Fungal_database.Trichomonascus_ciferrii.BC77':
+          prop: 0.05
+        '20221208.Rep1_Run2_ITS_Fungal_database.Erysiphe_necator.BC35':
+          prop: 0.1
+        '20221208.Rep1_Run2_ITS_Fungal_database.Eutypa_lata.BC39':
+          prop: 0.2
+        '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
+          prop: 0.4
+        '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
+          prop: 0.5
+    - count: 500
+      seed: 8745
+      mixin:
+        '20221208.Rep1_Run2_ITS_Fungal_database.Trichomonascus_ciferrii.BC77':
+          prop: 0.05
+        '20221208.Rep1_Run2_ITS_Fungal_database.Erysiphe_necator.BC35':
+          prop: 0.1
+        '20221208.Rep1_Run2_ITS_Fungal_database.Eutypa_lata.BC39':
+          prop: 0.2
+        '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
+          prop: 0.4
+        '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
+          prop: 0.5
     - count: 1000
       seed: 77
       mixin:
@@ -60,10 +86,10 @@ subsample:
   repetitions: 5
 cluster:
   methods:
-#    - vsearch
+    - vsearch
     - nanoclust
   hdbscan:
-    min_cluster_props: [0, 0.001, 0.0025, 0.005, 0.0065]
+    min_cluster_props: [0, 0.005, 0.0065]
   gather_min_cluster_size_stats: false
   shuffle:
     enabled: true
