@@ -70,6 +70,8 @@ include { FindReadsWithID } from './modules/local/seqkit/FindReadsWithID'
 include {
     seqkit
     seqkit as seqkit_2
+    seqkit as seqkit_shuffle
+    seqkit as seqkit_shuffle_nc
 } from './modules/local/seqkit/seqkit'
 
 def collectWithId(id, ch) {
@@ -162,7 +164,17 @@ workflow {
                             .groupTuple()
                             .map { meta, reads -> [ meta + [id: "all_samples"], reads ] }
             ).merged_reads
-        nanoclust_result = nanoclust(pooled_nanoclust)
+
+        if (params.cluster.shuffle.enabled) {
+            shuffled_nanoclust = seqkit_shuffle_nc(
+                "shuffle -s ${params.cluster.shuffle.seed}",
+                pooled_nanoclust
+            )
+        } else {
+            shuffled_nanoclust = pooled_nanoclust
+        }
+
+        nanoclust_result = nanoclust(shuffled_nanoclust)
 
         assignTaxDnabarcoder(
             nanoclust_result.most_abundant_by_cluster
@@ -187,7 +199,16 @@ workflow {
                         .map { meta, reads -> [ meta + [id: "all_samples"], reads ] }
         ).merged_reads
 
-        cluster = VSEARCH_CLUSTER(pooled)
+        if (params.cluster.shuffle.enabled) {
+            shuffled = seqkit_shuffle(
+                "shuffle -s ${params.cluster.shuffle.seed}",
+                pooled
+            )
+        } else {
+            shuffled = pooled
+        }
+
+        cluster = VSEARCH_CLUSTER(shuffled)
 
         otus = cluster.otu | UnGzip
         CreatePhyloseqOTUObject(otus)
