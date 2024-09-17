@@ -92,7 +92,7 @@ cluster:
     min_cluster_props: [0, 0.005, 0.0065]
   gather_min_cluster_size_stats: false
   shuffle:
-    enabled: true
+    enabled: false
     seed: 14
 consensus:
   num_polishing_reads: 200
