@@ -41,55 +41,69 @@ subsample:
         '20221208.Rep1_Run2_ITS_Fungal_database.Eutypa_lata.BC39':
           prop: 0.2
         '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
-          prop: 0.4
-        '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
           prop: 0.5
-    - count: 500
+        '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
+          prop: 1
+    - count: 200
       seed: 8745
       mixin:
         '20221208.Rep1_Run2_ITS_Fungal_database.Trichomonascus_ciferrii.BC77':
-          prop: 0.05
+          prop: 0.025
         '20221208.Rep1_Run2_ITS_Fungal_database.Erysiphe_necator.BC35':
-          prop: 0.1
+          prop: 0.05
         '20221208.Rep1_Run2_ITS_Fungal_database.Eutypa_lata.BC39':
-          prop: 0.2
+          prop: 0.1
         '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
-          prop: 0.4
+          prop: 0.25
         '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
           prop: 0.5
-    - count: 1000
+    - count: 500
       seed: 77
       mixin:
         '20221208.Rep1_Run2_ITS_Fungal_database.Trichomonascus_ciferrii.BC77':
-          prop: 0.05
+          prop: 0.01
         '20221208.Rep1_Run2_ITS_Fungal_database.Erysiphe_necator.BC35':
-          prop: 0.1
+          prop: 0.02
         '20221208.Rep1_Run2_ITS_Fungal_database.Eutypa_lata.BC39':
-          prop: 0.2
+          prop: 0.04
         '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
-          prop: 0.4
+          prop: 0.1
         '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
-          prop: 0.5
-    - count: 2000
-      seed: 4
+          prop: 0.2
+    - count: 1000
+      seed: 42
       mixin:
         '20221208.Rep1_Run2_ITS_Fungal_database.Trichomonascus_ciferrii.BC77':
-          prop: 0.05
+          prop: 0.005
         '20221208.Rep1_Run2_ITS_Fungal_database.Erysiphe_necator.BC35':
-          prop: 0.1
+          prop: 0.01
         '20221208.Rep1_Run2_ITS_Fungal_database.Eutypa_lata.BC39':
-          prop: 0.2
+          prop: 0.02
         '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
-          prop: 0.4
+          prop: 0.05
         '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
-          prop: 0.5
-  repetitions: 5
+          prop: 0.1
+    - count: 2000
+      seed: 4
+      # 5, 10, 20, 50, 100
+      mixin:
+        '20221208.Rep1_Run2_ITS_Fungal_database.Trichomonascus_ciferrii.BC77':
+          prop: 0.0025
+        '20221208.Rep1_Run2_ITS_Fungal_database.Erysiphe_necator.BC35':
+          prop: 0.005
+        '20221208.Rep1_Run2_ITS_Fungal_database.Eutypa_lata.BC39':
+          prop: 0.01
+        '20221208.Rep1_Run2_ITS_Fungal_database.Penicillium_chrysogenum.BC71':
+          prop: 0.025
+        '20221208.Rep1_Run2_ITS_Fungal_database.Candid_zeylanoides.BC57':
+          prop: 0.05
+  repetitions: 1
 cluster:
   methods:
     - vsearch
     - nanoclust
   hdbscan:
-    min_cluster_props: [0, 0.005, 0.0065]
+    min_cluster_props: [0, 0.005]
   gather_min_cluster_size_stats: false
   shuffle:
     enabled: false
