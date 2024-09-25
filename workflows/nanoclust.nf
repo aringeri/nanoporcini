@@ -10,7 +10,7 @@ workflow nanoclust {
         sample_reads // Channel<Map, Fastq.GZ> one per repetition, per sample
 
     main:
-        min_cluster_sizes = Channel.fromList(params.cluster.hdbscan.min_cluster_props)
+        min_cluster_sizes = Channel.fromList(params.cluster.hdbscan.min_cluster_sizes)
 
         umap = UnGzip(sample_reads)
             | kmerFreq
@@ -93,13 +93,13 @@ process umapTransform {
 }
 
 process hdbscanCluster {
-    tag "${meta.scenario.count}/${meta.scenario.rep} - ${min_cluster_size_prop}"
+    tag "${meta.scenario.count}/${meta.scenario.rep} - ${min_cluster_size}"
     container "docker.io/hecrp/nanoclust-read_clustering:latest"
     label 'mega_mem'
     label 'large_cpu'
 
     input:
-        tuple val(meta), path(umap_tsv), val(min_cluster_size_prop)
+        tuple val(meta), path(umap_tsv), val(min_cluster_size)
     output:
         tuple val(meta), path("*.tsv"), emit: clusters
 
@@ -115,7 +115,7 @@ process hdbscanCluster {
 
     nseqs = X.shape[0]
     df = pd.DataFrame({})
-    min_size = int(max(2, nseqs * $min_cluster_size_prop))
+    min_size = int(max(2, $min_cluster_size))
     clusters = hdbscan.HDBSCAN(min_cluster_size=min_size, cluster_selection_epsilon=0.5, core_dist_n_jobs=${task.cpus}).fit_predict(X)
     umap_out['cluster_id'] = clusters
 

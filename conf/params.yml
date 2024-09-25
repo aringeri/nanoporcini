@@ -103,7 +103,7 @@ cluster:
     - vsearch
     - nanoclust
   hdbscan:
-    min_cluster_props: [0, 0.005]
+    min_cluster_sizes: [5, 10, 20, 50, 100]
   gather_min_cluster_size_stats: false
   shuffle:
     enabled: false
