@@ -74,6 +74,8 @@ include {
     seqkit as seqkit_shuffle_nc
 } from './modules/local/seqkit/seqkit'
 
+include { seqkit_add_barcode } from './modules/local/seqkit/seqkit_add_barcode'
+
 def collectWithId(id, ch) {
     ch.collect { meta, read ->
         read
@@ -108,7 +110,11 @@ workflow {
 
     qualityControl('01-raw_reads_all_samples', ch_reads)
 
-    renamed = RENAME_BARCODE_LABEL(ch_reads)
+    if (params.sample_barcode_in_file_name) {
+        renamed = seqkit_add_barcode(ch_reads)
+    } else {
+        renamed = RENAME_BARCODE_LABEL(ch_reads)
+    }
 
     if (params.trim_adapters) {
         renamed = dorado_trim_adapters(renamed)

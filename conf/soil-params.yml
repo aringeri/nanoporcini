@@ -15,12 +15,10 @@ qualityFiltering:
     minQualityPhred: 20
     minLength: 900
 qc_quality_profile: false
-qc_plot_sample_level: false
-sample_barcode_in_file_name: false
+qc_plot_sample_level: true
+sample_barcode_in_file_name: true
 primers:
-#  fwd: "CTTGGTCATTTAGAGGAAGTAA" # ITSF1 (5'->3')
-#  rev_rc: "CCCGTCTTGAAACACGG" # LRU3 (reverse complement)
-  fwd: "AACTTAAAGGAATTGACGGAAG" # NS5 (SSU)
+  fwd: "TAGAGGAASTAAAAGTCGTAA" # ITS5?
   rev_rc: "GGTAAGCAGAACTGGCG" # LRU6 (reverse complement)
 region:
   LSU:
@@ -29,7 +27,7 @@ region:
 chimera_filtering:
   ref_db: "${baseDir}/data/db/unite2024/unite2024ITS.fasta"
 subsample:
-  enabled: true
+  enabled: false
   type: uneven
   scenarios:
     - count: 100
@@ -123,15 +121,4 @@ extract:
   ITS2: false
   FULL_ITS: true
   LSU: false
-exclude:
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Aspergillus_niger.BC44'
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Cryptococcus_albidus.BC58'
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Galactomyces_geotrichum.BC64'
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Meyerozyma_guillermondii.BC69'
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Yarrowia_lipolytica.BC82'
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Fusarium_proliferatum.BC63'
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Puccinia_triticina.BC26'
-# replicate species
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Austropuccinia_psidii.BC36'
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Cryptococcus_gattii_VG_III.BC60'
-  - '20221208.Rep1_Run2_ITS_Fungal_database.Cryptococcus_neoformans_VNI.BC61'
+exclude: []
