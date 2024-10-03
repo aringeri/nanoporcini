@@ -53,7 +53,9 @@ workflow subsample {
             subsampled = seqtk_sample(sampling).subsampled
         } else {
             log.info("subsample.enabled = false: Skipping subsampling")
-            subsampled = qcd_reads
+            subsampled = qcd_reads.map{ meta, reads ->
+                 [ meta + [scenario: [count: "ALL_READS", seed: "NA", rep: "1"]], reads ]
+            }
         }
     emit:
         subsampled = subsampled
