@@ -1,7 +1,7 @@
 process VSEARCH_CLUSTER {
     tag "$meta.id - $meta.region"
-    label "small_cpu"
-    label "med_mem"
+    label "large_cpu"
+    label "large_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/mulled-v2-53dae514294fca7b44842b784ed85a5303ac2d80:7b3365d778c690ca79bc85aaaeb86bb39a2dec69-0':
@@ -71,7 +71,10 @@ process VSEARCH_CLUSTER {
 
     for f in cluster_*;
     do
-        mv "\$f" "${prefix}.\$f.fasta"
+        if [ -e "\${f}" ]
+        then
+            mv "\$f" "${prefix}.\$f.fasta"
+        fi
     done
 
 
