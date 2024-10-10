@@ -49,6 +49,7 @@ include { VSEARCH_CLUSTER } from './modules/local/vsearch/cluster'
 include { VSEARCH_UCHIME_DENOVO } from './modules/local/vsearch/uchime_denovo'
 include { VSEARCH_UCHIME_REF } from './modules/local/vsearch/uchime_ref'
 include { VSEARCH_MAP_READS_TO_OTUS } from './modules/local/vsearch/map_to_otus'
+include { filter_singletons } from './modules/local/vsearch/filter_singletons'
 
 include { subsample } from './workflows/subsample'
 include {
@@ -219,7 +220,13 @@ workflow {
         otus = cluster.otu | UnGzip
         CreatePhyloseqOTUObject(otus)
 
-        cluster.centroids.map { meta, reads ->
+        if (params.cluster.vsearch.min_cluster_size != 1) {
+            centroids = filter_singletons(cluster.centroids)
+        } else {
+            centroids = cluster.centroids
+        }
+
+        centroids.map { meta, reads ->
             [ meta + [cluster_method: 'vsearch'], reads ]
         } | assignTaxDnabarcoder_vsearch
 
