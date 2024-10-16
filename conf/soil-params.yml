@@ -38,7 +38,7 @@ cluster:
     - vsearch
     - nanoclust
   hdbscan:
-    min_cluster_sizes: [5, 10, 20, 50, 100]
+    min_cluster_sizes: [2, 5, 10, 20, 50, 100]
   vsearch:
     min_cluster_size: 2
   gather_min_cluster_size_stats: false
@@ -59,4 +59,5 @@ extract:
   ITS2: false
   FULL_ITS: true
   LSU: false
-exclude: []
+exclude:
+  - sample_AP6
