@@ -64,7 +64,7 @@ I recommend [Dorado](https://github.com/nanoporetech/dorado) for these steps.
   - ex) `"AACTTAAAGGAATTGACGGAAG"` for NS5 primer (see https://unite.ut.ee/primers.php)
 - `primers.rev_rc` 
   - type - `string`
-  - The reverse primer sequence (which has been reverse complimented)
+  - The reverse primer sequence (which has been reverse complemented)
   - ex) `"GGTAAGCAGAACTGGCG"` for LR6 primer (see https://unite.ut.ee/primers.php)
 
 ## Outputs

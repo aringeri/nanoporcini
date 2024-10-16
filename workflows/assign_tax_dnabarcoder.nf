@@ -19,9 +19,9 @@ workflow assignTaxDnabarcoder {
 
 process dnabarcoderSearch {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
-    container "ghcr.io/aringeri/dnabarcoder:v1.0.6"
-    label "large_mem"
-    label "large_cpu"
+    container "ghcr.io/aringeri/dnabarcoder:3b21bc924486f3ccdba5d7ebe9b7cc5f7d069bc1"
+    label "mega_mem"
+    label "med_cpu"
 
     input:
         tuple val(meta), path(fasta), path(ref_db)
@@ -32,6 +32,7 @@ process dnabarcoderSearch {
     script:
     """
     dnabarcoder.py search \\
+        --ncpus ${task.cpus} \\
         -i $fasta \\
         -r $ref_db \\
         -o . > dnabarcoder_search.log
@@ -40,7 +41,7 @@ process dnabarcoderSearch {
 
 process dnabarcoderClassify {
     tag "${meta.scenario.count}/${meta.scenario.rep}"
-    container "ghcr.io/aringeri/dnabarcoder:v1.0.6"
+    container "ghcr.io/aringeri/dnabarcoder:3b21bc924486f3ccdba5d7ebe9b7cc5f7d069bc1"
     label "large_mem"
     label "large_cpu"
 
