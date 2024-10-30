@@ -1,6 +1,20 @@
 # Nanoporcini
 
-A pipeline for long-read metabarcoding fungi with Oxford Nanopore Technology.
+Nanoporcini is an experimental pipeline for long-read [metabarcoding](https://en.wikipedia.org/wiki/Metabarcoding) of fungi with Oxford Nanopore Technologies sequencing.
+
+
+# Features 
+
+Nanoporcini is written in the [Nextflow](https://www.nextflow.io/) workflow language and features:
+
+- Container support for Docker or Singularity.
+- Configurable quality filtering with [cutadapt](https://github.com/marcelm/cutadapt/) and [chopper](https://github.com/wdecoster/chopper).
+- Full ITS region extraction with [itsxpress](https://github.com/USDA-ARS-GBRU/itsxpress).
+- Chimera detection with [VSEARCH](https://github.com/torognes/vsearch/) 
+- A choice of clustering approaches:
+  - [VSEARCH](https://github.com/torognes/vsearch/)
+  - Custom implementation of [NanoCLUST](https://github.com/genomicsITER/NanoCLUST/)
+- Taxonomic classifications using [dnabarcoder](https://github.com/vuthuyduong/dnabarcoder)
 
 # Requirements
 
@@ -110,4 +124,8 @@ nextflow run main.nf \
   --outdir output/
 ```
 
+# Further reading
 
+This workflow was developed as part of my Masters degree. 
+My thesis can be read online ([https://aringeri.github.io/long-read-ITS-metabarcoding-thesis/](https://aringeri.github.io/long-read-ITS-metabarcoding-thesis/)),
+and it outlines the details of the pipeline, reasoning behind design choices and the validation approaches taken.
