@@ -1,0 +1,49 @@
+nextflow_pipeline {
+
+    name "Test main workflow parameter validation"
+    script "main.nf"
+
+    test("Should print error and suggest help command when required parameter missing") {
+        when {
+            params {
+                primers = [ fwd: "ABCD" ]
+                only_validate_params = true
+            }
+        }
+
+        then {
+            assert workflow.failed
+            assert workflow.stdout.contains("Required parameter (primers.rev_rc) is missing.")
+        }
+    }
+    test("Should update param with default value if not present") {
+        tag "WIP"
+        when {
+            params {
+                primers = [ fwd: "ABCD", rev_rc: "DCBA" ]
+                input = "${projectDir}/tests/test_data/zipped/fastq/*.fastq.gz"
+                outdir = "output/"
+                taxonomic_assignment = [
+                    dnabarcoder: [
+                        ref_db: "${projectDir}/data/db/unite2024/unite2024ITS.fasta",
+                        ref_classifications: "${projectDir}/data/db/unite2024/unite2024ITS.classification",
+                        cutoffs: "${projectDir}/data/db/dnabarcoder/unite2024ITS.unique.cutoffs.best.json"
+                    ]
+                ]
+                only_validate_params = true
+            }
+        }
+
+        then {
+            assert workflow.success
+
+            assert params.qualityFiltering.FULL_ITS.minQualityPhred == 20
+        }
+    }
+    // test("Should print help command") {}
+
+    // test("Should print error if parameter incorrect")
+
+    // test("Should succeed validation")
+
+}

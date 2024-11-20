@@ -1,6 +1,14 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
+def validationErrors = WfParamConfig.validateParams(params)
+for (ParamValidationError err in validationErrors) {
+    error(err.message)
+}
+if (params.only_validate_params) {
+    exit 0
+}
+
 params.input = "$baseDir/data/sub100/*.fastq.gz"
 // params.unite_db = "$baseDir/data/db/utax_reference_dataset_all_25.07.2023.fasta.gz"
 params.unite_db = "$baseDir/data/db/UNITE-full-all-10.15156-BIO-2938070-20230725/sh_general_release_dynamic_s_all_25.07.2023.fasta"
