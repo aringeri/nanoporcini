@@ -1,11 +1,18 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
+import groovy.json.JsonOutput
+import org.apache.groovy.yaml.util.YamlConverter
+
 def validationErrors = WfParamConfig.validateParams(params)
 for (ParamValidationError err in validationErrors) {
     error(err.message)
 }
 if (params.only_validate_params) {
+    log.info("The 'only_validate_params' option was specified. Exporting full set of parameters as yaml.")
+    def paramsJson = JsonOutput.toJson(params)
+    def paramsYml = YamlConverter.convertJsonToYaml(new StringReader(paramsJson))
+    println(paramsYml)
     exit 0
 }
 

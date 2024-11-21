@@ -1,3 +1,5 @@
+import groovy.yaml.YamlSlurper
+
 nextflow_pipeline {
 
     name "Test main workflow parameter validation"
@@ -16,18 +18,21 @@ nextflow_pipeline {
             assert workflow.stdout.contains("Required parameter (primers.rev_rc) is missing.")
         }
     }
-    test("Should update param with default value if not present") {
+    test("Should update all parameters with default value if not present") {
         tag "WIP"
         when {
             params {
                 primers = [ fwd: "ABCD", rev_rc: "DCBA" ]
-                input = "${projectDir}/tests/test_data/zipped/fastq/*.fastq.gz"
+                input = "path/to/input/files/*.fastq.gz"
                 outdir = "output/"
+                chimera_filtering = [
+                    ref_db: "path/to/reference/db"
+                ]
                 taxonomic_assignment = [
                     dnabarcoder: [
-                        ref_db: "${projectDir}/data/db/unite2024/unite2024ITS.fasta",
-                        ref_classifications: "${projectDir}/data/db/unite2024/unite2024ITS.classification",
-                        cutoffs: "${projectDir}/data/db/dnabarcoder/unite2024ITS.unique.cutoffs.best.json"
+                        ref_db: "path/to/reference/db",
+                        ref_classifications: "path/to/reference/classifications",
+                        cutoffs: "path/to/reference/cutoffs"
                     ]
                 ]
                 only_validate_params = true
@@ -36,8 +41,43 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
-
-            assert params.qualityFiltering.FULL_ITS.minQualityPhred == 20
+            assert !workflow.stdout.isEmpty()
+            assert workflow.stdout[0] == "---"
+            def yaml = new YamlSlurper().parseText(workflow.stdout.join("\n"))
+            assert yaml == [
+                'input': "path/to/input/files/*.fastq.gz",
+                'only_validate_params': true,
+                'chimera_filtering': ['ref_db': "path/to/reference/db"],
+                'primers':['fwd':'ABCD', 'rev_rc':'DCBA'],
+                'taxonomic_assignment': [
+                    'dnabarcoder': [
+                        'ref_db': "path/to/reference/db",
+                        'ref_classifications': "path/to/reference/classifications",
+                        'cutoffs': "path/to/reference/cutoffs"
+                    ],
+                    'enabled':false],
+                'outdir':'output/',
+                'qualityFiltering': [
+                    'FULL_ITS':['minQualityPhred':20, 'minLength':300, 'maxLength':6000]
+                ],
+                'quality-filtering': [
+                    'FULL_ITS':['minQualityPhred':20, 'minLength':300, 'maxLength':6000]
+                ],
+                'extract': ['ITS1':false, 'ITS2':false, 'FULL_ITS':true, 'LSU':false],
+                'subsample':['enabled':false, 'repetitions':1],
+                'cluster':[
+                    'methods':['vsearch'],
+                    'shuffle':['enabled':false, 'seed':14],
+                    'vsearch':['min_cluster_size':1],
+                    'hdbscan':['min_cluster_sizes':[5]],
+                    'gather_min_cluster_size_stats':false
+                ],
+                'consensus':['methods':[], 'num_polishing_reads':200],
+                'qc_quality_profile':false,
+                'qc_plot_sample_level':false,
+                'sample_barcode_in_file_name':false,
+                'exclude':[]
+            ]
         }
     }
     // test("Should print help command") {}
