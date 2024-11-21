@@ -4,6 +4,12 @@ nextflow.enable.dsl = 2
 import groovy.json.JsonOutput
 import org.apache.groovy.yaml.util.YamlConverter
 
+if (params.containsKey('help')) {
+    println(WfParamConfig.helpString())
+    exit 0
+}
+
+// Validate and update 'params' object with defaults here. Must be done before workflow.
 def validationErrors = WfParamConfig.validateParams(params)
 for (ParamValidationError err in validationErrors) {
     error(err.message)
@@ -15,17 +21,6 @@ if (params.only_validate_params) {
     println(paramsYml)
     exit 0
 }
-
-params.input = "$baseDir/data/sub100/*.fastq.gz"
-// params.unite_db = "$baseDir/data/db/utax_reference_dataset_all_25.07.2023.fasta.gz"
-params.unite_db = "$baseDir/data/db/UNITE-full-all-10.15156-BIO-2938070-20230725/sh_general_release_dynamic_s_all_25.07.2023.fasta"
-params.sintax_db = "$baseDir/data/db/unite-sintax.fasta"
-params.rdp_lsu_db = "$baseDir/data/db/RDP-LSU/RDP-LSU-training-11-dada2/RDP_LSU_fixed_train_set_v2.fa"
-params.rdp_lsu_trained_model_dir = "$baseDir/data/db/RDP-LSU/RDPClassifier_fungiLSU_trainsetNo11_trained/"
-params.outdir = 'output'
-params.classifier = 'blast'
-params.trim_adapters = false
-params.qc_quality_profile = true
 
 include { dorado_trim_adapters } from './modules/local/dorado/trim'
 include { CUTADAPT_REORIENT_READS } from './modules/local/cutadapt/reorient_reads'

@@ -19,7 +19,6 @@ nextflow_pipeline {
         }
     }
     test("Should update all parameters with default value if not present") {
-        tag "WIP"
         when {
             params {
                 primers = [ fwd: "ABCD", rev_rc: "DCBA" ]
@@ -76,14 +75,23 @@ nextflow_pipeline {
                 'qc_quality_profile':false,
                 'qc_plot_sample_level':false,
                 'sample_barcode_in_file_name':false,
+                trim_adapters: false,
                 'exclude':[]
             ]
         }
     }
-    // test("Should print help command") {}
+    test("Should print help command") {
+        when {
+            params {
+                help = true
+            }
+        }
 
-    // test("Should print error if parameter incorrect")
-
-    // test("Should succeed validation")
+        then {
+            assert workflow.success
+            assert workflow.stdout.collect{it.trim()}.contains('Usage:')
+            assert workflow.stdout.collect{it.trim()}.contains('nextflow run https://github.com/aringeri/nanoporcini -params-file <parameter-file-yaml> [-c <env-config>]')
+        }
+    }
 
 }
