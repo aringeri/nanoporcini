@@ -48,7 +48,7 @@ process PHYLOSEQ {
 }
 
 process CreatePhyloseqObject {
-    tag "$meta.id - $meta.region - $params.classifier"
+    tag "$meta.id - $meta.region"
     label "med_mem"
     
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -87,7 +87,7 @@ process CreatePhyloseqObject {
 }
 
 process CreatePhyloseqOTUObject {
-    tag "$meta.id - $meta.region - $params.classifier"
+    tag "$meta.id - $meta.region"
     label "med_mem"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?

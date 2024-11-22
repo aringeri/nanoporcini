@@ -45,7 +45,7 @@ This example uses NS5 forward primer and LR6 reverse primer (see <https://unite.
 ## Test run with example data
 
 A small example can be run with two samples and 20 reads each. (see [tests/test_data/example/fq](tests/test_data/example/fq)).
-This takes ~10 minutes to run on a 4 core macbook pro.
+This takes ~25 minutes to run on a 4 core macbook pro with 16GB RAM.
 
 First clone the repository and move into the nanoporcini directory:
 
@@ -61,6 +61,10 @@ This may take a while:
 mkdir -p data/db/unite2024/
 curl https://zenodo.org/api/records/12580255/files-archive -o data/db/unite2024/unite2024.zip
 unzip data/db/unite2024/unite2024.zip -d data/db/unite2024
+
+mkdir -p data/db/dnabarcoder/
+curl https://raw.githubusercontent.com/vuthuyduong/dnabarcoder/refs/heads/master/data/UNITE_2024_cutoffs/unite2024ITS.unique.cutoffs.best.json \
+  -o data/db/dnabarcoder/unite2024ITS.unique.cutoffs.best.json
 ```
 
 Run the examples:
@@ -68,8 +72,12 @@ Run the examples:
 ```bash
 nextflow run main.nf \
   -params-file "tests/test_data/example/example-params.yml" \
-  --outdir "nanoporcini_output/"
+  --outdir "nanoporcini_output/" \
+  -c conf/envs/local.config
 ```
+
+If you are running from a HPC environment change the `-c conf/envs/local.config` line to `-c conf/envs/cluster.config`.
+This will allow the pipeline to use more resources and execute tasks using the [Slurm](https://en.wikipedia.org/wiki/Slurm_Workload_Manager) workload manager.
 
 # Configuration
 
