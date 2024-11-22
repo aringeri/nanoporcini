@@ -8,42 +8,42 @@ class WfParamConfig {
         new WfParam(path: "outdir", required: true, description: 'The output directory. Will be created if it does not exist.'),
         new WfParam(path: "chimera_filtering.ref_db", required: true, description: 'The reference database (fasta file) to be used for chimera detection.'),
 
-        new WfParam(path: 'trim_adapters', required: false, defaultValue: false),
-        new WfParam(path: "qualityFiltering.FULL_ITS.minQualityPhred", required: false, defaultValue: 20),
-        new WfParam(path: "qualityFiltering.FULL_ITS.minLength", required: false, defaultValue: 300),
-        new WfParam(path: "qualityFiltering.FULL_ITS.maxLength", required: false, defaultValue: 6000),
+        new WfParam(path: 'trim_adapters', required: false, defaultValue: false, description: 'Trim adapter sequences from reads.'),
+        new WfParam(path: "qualityFiltering.FULL_ITS.minQualityPhred", required: false, defaultValue: 20, description: 'Minimum mean quality score filter for extracted full ITS sequences (Phred scale).'),
+        new WfParam(path: "qualityFiltering.FULL_ITS.minLength", required: false, defaultValue: 300, description: 'Minimum read length for extracted full ITS sequences.'),
+        new WfParam(path: "qualityFiltering.FULL_ITS.maxLength", required: false, defaultValue: 6000, description: 'Maximum read length for extracted full ITS sequences'),
 
-        new WfParam(path: "extract.ITS1", required: false, defaultValue: false),
-        new WfParam(path: "extract.ITS2", required: false, defaultValue: false),
-        new WfParam(path: "extract.FULL_ITS", required: false, defaultValue: true),
-        new WfParam(path: "extract.LSU", required: false, defaultValue: false),
+        new WfParam(path: "extract.ITS1", required: false, defaultValue: false, description: '(Experimental): Extract the ITS1 subregion from reads'),
+        new WfParam(path: "extract.ITS2", required: false, defaultValue: false, description: '(Experimental): Extract the ITS2 subregion from reads'),
+        new WfParam(path: "extract.FULL_ITS", required: false, defaultValue: true, description: 'Extract the full ITS region from reads'),
+        new WfParam(path: "extract.LSU", required: false, defaultValue: false, description: '(Experimental): Extract the LSU region from reads'),
 
-        new WfParam(path: "subsample.enabled", required: false, defaultValue: false),
-        new WfParam(path: "subsample.repetitions", required: false, defaultValue: 1),
+        new WfParam(path: "subsample.enabled", required: false, defaultValue: false, description: '(Experimental): Subsample reads from each sequencing sample.'),
+        new WfParam(path: "subsample.repetitions", required: false, defaultValue: 1, description: '(Experimental): The number of times to repeat subsampling.'),
 
-        new WfParam(path: "cluster.methods", required: false, defaultValue: ['vsearch']),
-        new WfParam(path: "cluster.shuffle.enabled", required: false, defaultValue: false),
-        new WfParam(path: "cluster.shuffle.seed", required: false, defaultValue: 14),
-        new WfParam(path: "cluster.vsearch.min_cluster_size", required: false, defaultValue: 1),
-        new WfParam(path: "cluster.hdbscan.min_cluster_sizes", required: false, defaultValue: [5]),
-        new WfParam(path: "cluster.gather_min_cluster_size_stats", required: false, defaultValue: false),
+        new WfParam(path: "cluster.methods", required: false, defaultValue: ['vsearch'], description: 'The clustering method to use: \'vsearch\' or \'nanoclust\'.'),
+        new WfParam(path: "cluster.shuffle.enabled", required: false, defaultValue: false, description: '(Experimental): Shuffle reads before clustering.'),
+        new WfParam(path: "cluster.shuffle.seed", required: false, defaultValue: 14, description: '(Experimental): The random seed to use for shuffling.'),
+        new WfParam(path: "cluster.vsearch.min_cluster_size", required: false, defaultValue: 1, description: '(Experimental): Filter out singletons after clustering with VSEARCH.'),
+        new WfParam(path: "cluster.hdbscan.min_cluster_sizes", required: false, defaultValue: [5], description: '(Experimental): A list of \'min_cluster_size\' parameters to use when clustering with HDBSCAN (NanoCLUST).'),
+        new WfParam(path: "cluster.gather_min_cluster_size_stats", required: false, defaultValue: false, description: '(Experimental): Repeat (NanoCLUST) clustering multiple times and collect OTU stats.'),
 
-        new WfParam(path: "taxonomic_assignment.enabled", required: false, defaultValue: false), // TODO to remove
+        new WfParam(path: "taxonomic_assignment.enabled", required: false, defaultValue: false, description: '(Experimental): Unused, ignore.'), // TODO to remove
         new WfParam(path: "taxonomic_assignment.dnabarcoder.ref_db", required: true, description: 'The reference database (fasta file) to be used for taxonomic assignments.'),
         new WfParam(path: "taxonomic_assignment.dnabarcoder.ref_classifications", required: true, description: 'The reference database classifications file required by dnabarcoder.'),
         new WfParam(path: "taxonomic_assignment.dnabarcoder.cutoffs", required: true, description: 'The reference database cutoffs (json) required by dnabarcoder'),
 
-        new WfParam(path: "consensus.methods", required: false, defaultValue: []),
-        new WfParam(path: "consensus.num_polishing_reads", required: false, defaultValue: 200),
+        new WfParam(path: "consensus.methods", required: false, defaultValue: [], description: '(Experimental): Specify which clustering methods should generate a consensus sequence per OTU. (\'nanoclust\' or \'vsearch\').'),
+        new WfParam(path: "consensus.num_polishing_reads", required: false, defaultValue: 200, description: '(Experimental): The number of reads to use for polishing the consensus sequence.'),
 
-        new WfParam(path: "qc_quality_profile", required: false, defaultValue: false),
-        new WfParam(path: "qc_plot_sample_level", required: false, defaultValue: false),
-        new WfParam(path: "sample_barcode_in_file_name", required: false, defaultValue: false),
-        new WfParam(path: "exclude", required: false, defaultValue: []),
+        new WfParam(path: "qc_quality_profile", required: false, defaultValue: false, description: 'Generate a visual summary of the distribution of quality scores as a function of sequence position.'),
+        new WfParam(path: "qc_plot_sample_level", required: false, defaultValue: false, description: 'Plot quality scores per sample file (as opposed to all samples together).'),
+        new WfParam(path: "sample_barcode_in_file_name", required: false, defaultValue: true, description: 'Use the filename as a sample level identifier.'),
+        new WfParam(path: "exclude", required: false, defaultValue: [], description: 'Sample files to exclude from analysis.'),
         new WfParam(path: "help", required: false, description: 'Print this help message'),
     ]
 
-    private static String SPACE = "   "
+    private static final String SPACE = "   "
 
     static String helpString() {
         def config = WORKFLOW_CONFIG
@@ -86,12 +86,12 @@ ${describeOptions(SPACE + SPACE, config.findAll { !it.required })}
             Choose a configuration profile: docker (default), singularity
         -h, -help
             Print the nextflow command usage
-"""
+""".trim()
     }
 
     static String describeOptions(String tab, params) {
         return params
-            .collect { "${tab}--${it.path}\n${SPACE}${tab}${it.description}"}
+            .collect { "${tab}--${it.path}\n${SPACE}${tab}${it.description}${it.defaultValue != null ? " Default value: ${it.defaultValue}." : ""}"}
             .join("\n")
     }
 

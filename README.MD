@@ -28,23 +28,19 @@ Nanoporcini is written in the [Nextflow](https://www.nextflow.io/) workflow lang
 
 # Quick start
 
-## Run with default parameters
+## Run with minimal required parameters
 ```bash
-nextflow run main.nf \
-  --input "data/*.fastq.gz" \
-  --outdir output/
-```
-
-## Run with custom primers
-```bash
-nextflow run main.nf \
-  --input "data/*.fastq.gz" \
+nextflow run https://github.com/aringeri/nanoporcini \
+  --input "path/to/data/sample*.fastq.gz" \
+  --outdir "nanoporcini_output/" \
   --primers.fwd "AACTTAAAGGAATTGACGGAAG" \ 
   --primers.rev_rc "GGTAAGCAGAACTGGCG" \
-  --outdir output/
+  --chimera_filtering.ref_db "path/to/unite/db.fasta" \
+  --taxonomic_assignment.dnabarcoder.ref_db "path/to/unite/db.fasta" \
+  --taxonomic_assignment.dnabarcoder.ref_classifications "path/to/unite/db.classification" \
+  --taxonomic_assignment.dnabarcoder.cutoffs "path/to/unite/db/cutoffs.best.json" 
 ```
-
-NS5 forward primer and LR6 reverse primer.
+This example uses NS5 forward primer and LR6 reverse primer (see <https://unite.ut.ee/primers.php>).
 
 # Configuration
 
@@ -53,10 +49,10 @@ I recommend using creating a [yaml](https://en.wikipedia.org/wiki/YAML) file to 
 See [conf/params.yml](conf/params.yml) for an example configuration file that can be given to the run command with the `-params-file` option:
 
 ```bash
-nextflow run main.nf \
-  --input "data/*.fastq.gz" \
+nextflow run https://github.com/aringeri/nanoporcini \
+  --input "path/to/data/sample*.fastq.gz" \
   -params-file conf/params.yml \
-  --outdir output/
+  --outdir "nanoporcini_output/"
 ```
 
 ## Inputs
@@ -78,7 +74,7 @@ I recommend [Dorado](https://github.com/nanoporetech/dorado) for these steps.
   - ex) `"AACTTAAAGGAATTGACGGAAG"` for NS5 primer (see https://unite.ut.ee/primers.php)
 - `primers.rev_rc` 
   - type - `string`
-  - The reverse primer sequence (which has been reverse complemented)
+  - The reverse primer sequence (which has been reverse complemented).
   - ex) `"GGTAAGCAGAACTGGCG"` for LR6 primer (see https://unite.ut.ee/primers.php)
 
 ## Outputs
@@ -118,10 +114,10 @@ These will allow you to use the available resources on your system and improve t
 Pass this to the run command with the `-c` option:
 
 ```bash
-nextflow run main.nf \
-  --input "data/*.fastq.gz" \
+nextflow run https://github.com/aringeri/nanoporcini \
+  --input "path/to/data/sample*.fastq.gz" \
   -c conf/envs/local.config \
-  --outdir output/
+  --outdir "nanoporcini_output/"
 ```
 
 # Further reading

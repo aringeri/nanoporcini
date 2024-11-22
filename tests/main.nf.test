@@ -74,7 +74,7 @@ nextflow_pipeline {
                 'consensus':['methods':[], 'num_polishing_reads':200],
                 'qc_quality_profile':false,
                 'qc_plot_sample_level':false,
-                'sample_barcode_in_file_name':false,
+                'sample_barcode_in_file_name':true,
                 trim_adapters: false,
                 'exclude':[]
             ]
