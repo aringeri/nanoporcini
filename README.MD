@@ -60,7 +60,7 @@ This may take a while:
 ```bash
 mkdir -p data/db/unite2024/
 curl https://zenodo.org/api/records/12580255/files-archive -o data/db/unite2024/unite2024.zip
-unzip data/db/unite2024/unite2024.zip
+unzip data/db/unite2024/unite2024.zip -d data/db/unite2024
 ```
 
 Run the examples:
