@@ -1,0 +1,13 @@
+input: "${projectDir}/tests/test_data/example/fq/Sample*.fq.gz"
+outdir: "output/test_run"
+primers:
+  fwd: "AACTTAAAGGAATTGACGGAAG" # NS5 (SSU)
+  rev_rc: "GGTAAGCAGAACTGGCG" # LRU6 (reverse complement)
+chimera_filtering:
+  ref_db: "${projectDir}/data/db/unite2024/unite2024ITS.fasta"
+taxonomic_assignment:
+  dnabarcoder:
+    ref_db: "${projectDir}/data/db/unite2024/unite2024ITS.fasta"
+    ref_classifications: "${projectDir}/data/db/unite2024/unite2024ITS.classification"
+    cutoffs: "${projectDir}/data/db/dnabarcoder/unite2024ITS.unique.cutoffs.best.json"
+

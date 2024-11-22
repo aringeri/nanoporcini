@@ -84,6 +84,8 @@ ${describeOptions(SPACE + SPACE, config.findAll { !it.required })}
             Add the specified file to configuration set
         -p, -profile
             Choose a configuration profile: docker (default), singularity
+        -resume
+            Execute the script using the cached results, useful to continue executions that were stopped by an error.
         -h, -help
             Print the nextflow command usage
 """.trim()

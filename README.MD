@@ -42,6 +42,35 @@ nextflow run https://github.com/aringeri/nanoporcini \
 ```
 This example uses NS5 forward primer and LR6 reverse primer (see <https://unite.ut.ee/primers.php>).
 
+## Test run with example data
+
+A small example can be run with two samples and 20 reads each. (see [tests/test_data/example/fq](tests/test_data/example/fq)).
+This takes ~10 minutes to run on a 4 core macbook pro.
+
+First clone the repository and move into the nanoporcini directory:
+
+```bash
+git clone https://github.com/aringeri/nanoporcini
+cd nanoporcini 
+```
+
+Download the UNITE reference database using the command below or do it through your browser at <https://zenodo.org/records/12580255>. 
+This may take a while:
+
+```bash
+mkdir -p data/db/unite2024/
+curl https://zenodo.org/api/records/12580255/files-archive -o data/db/unite2024/unite2024.zip
+unzip data/db/unite2024/unite2024.zip
+```
+
+Run the examples:
+
+```bash
+nextflow run main.nf \
+  -params-file "tests/test_data/example/example-params.yml" \
+  --outdir "nanoporcini_output/"
+```
+
 # Configuration
 
 Many of the pipeline parameters can be configured to suit your needs.
